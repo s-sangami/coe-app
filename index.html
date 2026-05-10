@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>COE Claims System — EPMCE</title>
+<title>COE Claims System — PMC</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
@@ -505,7 +505,7 @@ function emptyClaim(workTypeId,seasonId){
   return {
     work_type_id:workTypeId,season_id:seasonId,
     name:'',designation:'',dept:'',
-    college:isInt?'EPMCE - Er. Perumal Manimekalai College of Engineering':'',college_code:'',
+    college:isInt?'Er. Perumal Manimekalai College of Engineering':'',college_code:'',
     ac_no:'',ifsc_code:'',bank:'',branch:'',mobile_no:'',
     amount:0,claim_desc:'',board_name:'',
     subject_code:'',subject_name:'',
@@ -841,7 +841,7 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
           {isVal&&<div className="form-group"><label className="form-label">Department</label><select className="form-select" value={form.dept||''} onChange={e=>fld('dept',e.target.value)}><option value="">— Select —</option>{DEPTS.map(d=><option key={d} value={d}>{d}</option>)}</select></div>}
           <div className="form-group">
             <label className="form-label">College{isInt&&<span style={{marginLeft:6,fontSize:10,color:'var(--int)',fontWeight:600}}>(auto)</span>}</label>
-            <input className="form-input" value={form.college||(isInt?'EPMCE - Er. Perumal Manimekalai College of Engineering':'')} onChange={e=>!isInt&&fld('college',e.target.value)} placeholder={isInt?'EPMCE - Er. Perumal Manimekalai College of Engineering':'External college name'} readOnly={isInt} style={isInt?{background:'#f0f4f9',cursor:'not-allowed'}:{}}/>
+            <input className="form-input" value={form.college||(isInt?'Er. Perumal Manimekalai College of Engineering':'')} onChange={e=>!isInt&&fld('college',e.target.value)} placeholder={isInt?'EPMCE - Er. Perumal Manimekalai College of Engineering':'External college name'} readOnly={isInt} style={isInt?{background:'#f0f4f9',cursor:'not-allowed'}:{}}/>
           </div>
           {!isInt&&<div className="form-group">
             <label className="form-label">College Code</label>
@@ -1741,7 +1741,7 @@ function StaffDirectory({season,toast,onViewProfile}){
             <div className="form-group"><label className="form-label">Department</label><select className="form-select" value={addForm.dept} onChange={e=>setAddForm(f=>({...f,dept:e.target.value}))}><option value="">— Select —</option>{DEPTS.map(d=><option key={d} value={d}>{d}</option>)}</select></div>
             <div className="form-group">
               <label className="form-label">College{addForm.staff_type==='INT'&&<span style={{marginLeft:6,fontSize:10,color:'var(--int)',fontWeight:600}}>(auto)</span>}</label>
-              <input className="form-input" value={addForm.staff_type==='INT'?'EPMCE - Er. Perumal Manimekalai College of Engineering':addForm.college} onChange={e=>addForm.staff_type!=='INT'&&setAddForm(f=>({...f,college:e.target.value}))} placeholder={addForm.staff_type==='INT'?'EPMCE - Er. Perumal Manimekalai College of Engineering':'External college'} readOnly={addForm.staff_type==='INT'} style={addForm.staff_type==='INT'?{background:'#f0f4f9',cursor:'not-allowed'}:{}}/>
+              <input className="form-input" value={addForm.staff_type==='INT'?'Er. Perumal Manimekalai College of Engineering':addForm.college} onChange={e=>addForm.staff_type!=='INT'&&setAddForm(f=>({...f,college:e.target.value}))} placeholder={addForm.staff_type==='INT'?'EPMCE - Er. Perumal Manimekalai College of Engineering':'External college'} readOnly={addForm.staff_type==='INT'} style={addForm.staff_type==='INT'?{background:'#f0f4f9',cursor:'not-allowed'}:{}}/>
             </div>
             <div className="form-group"><label className="form-label">Mobile
               {addForm.mobile_no&&(()=>{
@@ -2405,7 +2405,7 @@ function App(){
       <div className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-title">COE Claims</div>
-          <div className="sidebar-sub">EPMCE — Controller of Examinations</div>
+          <div className="sidebar-sub">Controller of Examinations</div>
 
         </div>
         <div className="season-box">
