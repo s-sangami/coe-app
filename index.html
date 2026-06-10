@@ -728,7 +728,7 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
             date:r.date||'',
             session:r.session||'FN',
             no_sessions:r.no_sessions||1,
-            row_total:r.row_amount||0,
+            row_total:r.row_amount!==null&&r.row_amount!==undefined&&r.row_amount!==''?Number(r.row_amount):'',
             ehs_total:(r.ehs_rem||0)+(r.ehs_lump||0),
             ehs_rem:r.ehs_rem||0,
             ehs_lump:r.ehs_lump||0,
@@ -956,7 +956,7 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
       ehs_lump:Number(r.ehs_lump)||0,
       ihs_rem:Number(r.ihs_rem)||0,
       rhs_rem:Number(r.rhs_rem)||0,
-      row_total:Number(r.row_amount)||0,
+      row_total:r.row_amount!==null&&r.row_amount!==undefined&&r.row_amount!==''?Number(r.row_amount):'',
       ehs_total:(Number(r.ehs_rem)||0)+(Number(r.ehs_lump)||0),
     }));
     const rows=mappedRows.length?mappedRows:[newRow()];
