@@ -860,7 +860,7 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
       bank:form.bank,branch:form.branch,
       mobile_no:form.mobile_no,amount:Number(form.amount)||0,claim_desc:form.claim_desc,
       board_name:form.board_name,college_code:form.college_code||'',
-      subject_code: isMultiSubject ? (()=>{ const valid=subjects.filter(s=>(s.code||'').trim()||(s.name||'').trim()); return valid.length?JSON.stringify(valid):form.subject_code||''; })() : form.subject_code,
+      subject_code: isMultiSubject ? (()=>{ const valid=subjects.filter(s=>(s.code||'').trim()||(s.name||'').trim()); if(valid.length) return JSON.stringify(valid); const fc=form.subject_code||''; return (fc==='[]'||fc==='[\"\"]')?'':fc; })() : (form.subject_code==='[]'?'':form.subject_code),
       subject_name: isMultiSubject ? '' : form.subject_name,
       qty_sessions:form.no_sessions,
     };
@@ -2226,12 +2226,15 @@ function StaffDirectory({season,toast,onViewProfile}){
     // Also load claims to show works done
     const {data:claimsData}=await supabase.from('claims').select('*').eq('season_id',season.id);
     if(masterData){
+      // Normalize name for matching — strip title (Mr/Mrs/Miss/Dr) + lowercase + collapse spaces
+      const normName=n=>(n||'').replace(/^(Mr|Mrs|Miss|Ms|Dr|Prof)\.?\s+/i,'').toLowerCase().replace(/\s+/g,' ').trim();
       const worksByName={};
       (claimsData||[]).forEach(c=>{
-        if(!worksByName[c.name]) worksByName[c.name]=[];
-        worksByName[c.name].push(c);
+        const key=normName(c.name);
+        if(!worksByName[key]) worksByName[key]=[];
+        worksByName[key].push(c);
       });
-      const withWorks=masterData.map(s=>({...s,works:worksByName[s.name]||[]}));
+      const withWorks=masterData.map(s=>({...s,works:worksByName[normName(s.name)]||[]}));
       const filtered=query?withWorks.filter(s=>s.name.toLowerCase().includes(query.toLowerCase())):withWorks;
       setIntStaff(filtered.filter(s=>!s.staff_type||s.staff_type==='INT'));
       setExtStaff(filtered.filter(s=>s.staff_type==='EXT'));
