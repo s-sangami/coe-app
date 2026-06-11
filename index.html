@@ -75,25 +75,24 @@ body{background:var(--bg);color:var(--text);min-height:100vh;}
 .BE{background:#fff;color:var(--muted);border:1.5px solid var(--border);padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:.15s;}
 .BE:hover{background:var(--bg);}
 /* FORM */
-.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;}
-.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-grid{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;flex:1 1 200px;min-width:160px;box-sizing:border-box;}
 .form-label{font-size:12px;font-weight:600;color:var(--muted);}
-.form-input{padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none;transition:.2s;}
+.form-input{padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none;transition:.2s;width:100%;box-sizing:border-box;}
 .form-input:focus{border-color:var(--int);}
 .form-input.mono{font-family:'DM Mono',monospace;letter-spacing:.5px;}
-.form-select{padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer;}
+.form-select{padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer;width:100%;box-sizing:border-box;}
 .form-actions{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;}
 /* TABLE */
 .tbl-wrap{overflow-x:auto;}
-.form-grid{flex-wrap:wrap!important;}
-.form-grid .form-group{min-width:140px;}
 @media(max-width:1200px){
-  .form-grid .form-group{flex:1 1 calc(33% - 8px)!important;}
-  .sidebar{width:200px!important;}
-  .main-content{margin-left:200px!important;}
+  .form-group{flex:1 1 calc(33.333% - 12px);}
 }
 @media(max-width:900px){
-  .form-grid .form-group{flex:1 1 calc(50% - 8px)!important;}
+  .form-group{flex:1 1 calc(50% - 12px);}
+}
+@media(max-width:600px){
+  .form-group{flex:1 1 100%;}
 }
 table{width:100%;border-collapse:collapse;font-size:13px;}
 th{background:var(--bg);padding:9px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border);}
@@ -1491,7 +1490,8 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
           displayClaims.length===0?<div style={{padding:20,textAlign:'center',color:'var(--muted)'}}>No matches for "{searchText}".</div>:
           <table>
             <thead><tr>
-              <th>#</th><th>Name</th><th>Designation</th><th>Dept</th><th>College</th><th>Exam Date</th>
+              <th>#</th><th>Name</th><th>Designation</th><th>Dept</th><th>College</th>
+              {(wt.id==='QP_INT'||wt.id==='QP_EXT')&&<th>Exam Date</th>}
               {isQP&&<><th>Subject Code</th><th>Subject Name</th></>}
               {isVal&&<th>Board</th>}
               {(isVal||isScrutiny||isTabData)&&<th>Claim</th>}
@@ -1518,17 +1518,16 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
                 <td>{c.designation||'-'}</td>
                 <td>{c.dept||'-'}</td>
                 <td>{c.college||'-'}</td>
-                <td style={{fontSize:11,color:'var(--muted)'}}>
+                {(wt.id==='QP_INT'||wt.id==='QP_EXT')&&<td style={{fontSize:11,color:'var(--muted)'}}>
                   {(()=>{
                     if(!c.subject_code) return '-';
-                    // Get first subject code (handles both JSON array and plain string)
                     let code=c.subject_code;
                     try{const arr=JSON.parse(c.subject_code);if(Array.isArray(arr)&&arr.length)code=arr[0].code||'';}catch{}
                     const sched=examSchedule[code.toUpperCase().trim()];
                     if(!sched||!sched.date) return '-';
                     return new Date(sched.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+(sched.session?' '+sched.session:'');
                   })()}
-                </td>
+                </td>}
                 {isQP&&<><td className="mono" style={{fontSize:12}}>{fmtSubjects(c.subject_code,'').split('(')[0].trim()||'-'}</td><td style={{fontSize:12}}>{(()=>{ try{ const arr=JSON.parse(c.subject_code||'[]'); if(Array.isArray(arr)){ const v=arr.map(s=>(s.name||'').trim()).filter(Boolean); return v.length?v.join(', '):c.subject_name||'-'; } }catch{} return c.subject_name||'-'; })()}</td></>}
                 {isVal&&<td>{c.board_name||'-'}</td>}
                 {(isVal||isScrutiny||isTabData)&&<td style={{maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.claim_desc||'-'}</td>}
