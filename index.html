@@ -53,7 +53,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;}
 .dot-int{background:var(--int);}
 .dot-ext{background:var(--ext);}
 .dot-gold{background:var(--gold);}
-.main{margin-left:260px;padding:28px;flex:1;}
+.main{padding:28px;flex:1;}
 /* CARDS */
 .page-header{margin-bottom:22px;}
 .page-title{font-size:20px;font-weight:700;}
@@ -3022,9 +3022,9 @@ function App(){
       <button
         onClick={()=>setSidebarOpen(o=>!o)}
         title={sidebarOpen?"Collapse sidebar":"Expand sidebar"}
-        style={{position:'fixed',left:sidebarOpen?220:0,top:'50%',transform:'translateY(-50%)',zIndex:200,background:'var(--ink)',color:'#fff',border:'none',borderRadius:'0 6px 6px 0',padding:'10px 6px',cursor:'pointer',fontSize:14,lineHeight:1,transition:'left 0.25s ease'}}
+        style={{position:'fixed',left:sidebarOpen?220:0,top:'50%',transform:'translateY(-50%)',zIndex:300,background:'var(--ink)',color:'#fff',border:'none',borderRadius:'0 8px 8px 0',padding:'14px 7px',cursor:'pointer',fontSize:16,lineHeight:1,transition:'left 0.25s ease',boxShadow:'2px 0 6px rgba(0,0,0,0.15)'}}
       >{sidebarOpen?'◀':'▶'}</button>
-      <div className="sidebar" style={{width:sidebarOpen?220:0,minWidth:sidebarOpen?220:0,overflow:sidebarOpen?'auto':'hidden',borderRight:sidebarOpen?'1px solid var(--border)':'none'}}>
+      <div className="sidebar" style={{transform:sidebarOpen?'translateX(0)':'translateX(-100%)'}}>
         <div className="sidebar-header">
           <div className="sidebar-title">COE Claims</div>
           <div className="sidebar-sub">Controller of Examinations</div>
