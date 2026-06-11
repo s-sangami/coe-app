@@ -298,22 +298,24 @@ function splitDesignation(rawDesig, existingDept){
 // Format subject_code for display — handles both JSON array format and plain string
 function fmtSubjects(rawCode, rawName){
   if(!rawCode||rawCode==='null'||rawCode==='undefined') return rawName||'-';
+  // Treat junk values as empty
+  const isJunk=v=>{const t=(v||'').trim();return !t||t==='[]'||t==='{}'||t==='[""]'||t==='null'||t==='undefined';};
   try{
     const arr=JSON.parse(rawCode);
     if(Array.isArray(arr)){
-      // Filter out entries where BOTH code and name are empty
-      const valid=arr.filter(s=>s&&((s.code||'').trim()||(s.name||'').trim()));
+      // Filter out entries where code AND name are empty OR junk
+      const valid=arr.filter(s=>s&&(!isJunk(s.code)||!isJunk(s.name)));
       if(valid.length===0) return rawName||'-';
       return valid.map(s=>{
-        const c=(s.code||'').trim();
-        const n=(s.name||'').trim();
+        const c=isJunk(s.code)?'':(s.code||'').trim();
+        const n=isJunk(s.name)?'':(s.name||'').trim();
         return c?(c+(n?' ('+n+')':'')):(n||'');
-      }).filter(Boolean).join(', ')||'-';
+      }).filter(Boolean).join(', ')||(rawName||'-');
     }
   }catch{}
   // Plain string fallback
   const s=String(rawCode).trim();
-  if(!s||s==='[]'||s==='{}') return rawName||'-';
+  if(isJunk(s)) return rawName||'-';
   return s+(rawName&&rawName!==s?' — '+rawName:'');
 }
 
@@ -1528,7 +1530,7 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
                     return new Date(sched.date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})+(sched.session?' '+sched.session:'');
                   })()}
                 </td>}
-                {isQP&&<><td className="mono" style={{fontSize:12}}>{fmtSubjects(c.subject_code,'').split('(')[0].trim()||'-'}</td><td style={{fontSize:12}}>{(()=>{ try{ const arr=JSON.parse(c.subject_code||'[]'); if(Array.isArray(arr)){ const v=arr.map(s=>(s.name||'').trim()).filter(Boolean); return v.length?v.join(', '):c.subject_name||'-'; } }catch{} return c.subject_name||'-'; })()}</td></>}
+                {isQP&&<><td className="mono" style={{fontSize:12}}>{fmtSubjects(c.subject_code,'').split('(')[0].trim()||'-'}</td><td style={{fontSize:12}}>{(()=>{ const isJunk=v=>{const t=(v||'').trim();return !t||t==='[]'||t==='{}'||t==='null';}; try{ const arr=JSON.parse(c.subject_code||'[]'); if(Array.isArray(arr)){ const v=arr.map(s=>(s.name||'').trim()).filter(x=>!isJunk(x)); return v.length?v.join(', '):(c.subject_name||'-'); } }catch{} return c.subject_name||'-'; })()}</td></>}
                 {isVal&&<td>{c.board_name||'-'}</td>}
                 {(isVal||isScrutiny||isTabData)&&<td style={{maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.claim_desc||'-'}</td>}
                 <td className="mono">{c.ac_no||'-'}</td>
