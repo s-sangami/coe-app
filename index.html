@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>COE Claims System — EPMCE</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --int:#1e4d8c;--int-light:#e8f0fb;--int-mid:#4a7cc7;
+  --ext:#6b2080;--ext-light:#f3e8fb;--ext-mid:#9b4dca;
+  --gold:#7a5c00;--gold-light:#fdf6e3;
+  --bg:#f5f7fa;--card:#fff;--border:#e2e8f0;
+  --text:#1a202c;--muted:#718096;--danger:#c53030;--success:#276749;
+  --radius:10px;--shadow:0 1px 4px rgba(0,0,0,.08);
+  font-family:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);min-height:100vh;}
+/* LOGIN */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1e4d8c 0%,#6b2080 100%);}
+.login-card{background:#fff;border-radius:16px;padding:40px;width:360px;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+.login-logo{font-size:28px;font-weight:700;color:var(--int);margin-bottom:4px;}
+.login-sub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.login-label{font-size:13px;font-weight:600;color:var(--text);display:block;margin-bottom:6px;}
+.login-input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;transition:.2s;}
+.login-input:focus{border-color:var(--int);}
+.login-btn{width:100%;margin-top:20px;padding:12px;background:var(--int);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:.2s;}
+.login-btn:hover{background:#163a6e;}
+.login-err{color:var(--danger);font-size:13px;margin-top:10px;text-align:center;}
+/* LAYOUT */
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:260px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:100;}
+.sidebar-header{padding:20px 18px 12px;border-bottom:1px solid var(--border);}
+.sidebar-title{font-size:15px;font-weight:700;color:var(--int);}
+.sidebar-sub{font-size:11px;color:var(--muted);}
+.season-box{margin:10px 14px;padding:8px 12px;background:var(--gold-light);border:1px solid #e6d49a;border-radius:8px;font-size:12px;}
+.season-label{color:var(--gold);font-weight:700;display:block;margin-bottom:4px;}
+.season-select{width:100%;border:none;background:transparent;font-size:12px;color:var(--gold);font-weight:600;outline:none;cursor:pointer;}
+.nav-group{padding:8px 14px 4px;}
+.nav-group-title{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);padding:0 4px;margin-bottom:4px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);transition:.15s;margin-bottom:2px;}
+.nav-item:hover{background:var(--bg);}
+.nav-item.active-int{background:var(--int-light);color:var(--int);font-weight:600;}
+.nav-item.active-ext{background:var(--ext-light);color:var(--ext);font-weight:600;}
+.nav-item.active-gold{background:var(--gold-light);color:var(--gold);font-weight:600;}
+.nav-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dot-int{background:var(--int);}
+.dot-ext{background:var(--ext);}
+.dot-gold{background:var(--gold);}
+.main{margin-left:260px;padding:28px;flex:1;}
+/* CARDS */
+.page-header{margin-bottom:22px;}
+.page-title{font-size:20px;font-weight:700;}
+.page-sub{font-size:13px;color:var(--muted);margin-top:2px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:18px;box-shadow:var(--shadow);}
+/* BUTTONS */
+.BP{background:var(--int);color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;}
+.BP:hover{background:#163a6e;}
+.BP.ext{background:var(--ext);}
+.BP.ext:hover{background:#51186b;}
+.BP.gold{background:var(--gold);}
+.BP.gold:hover{background:#5a4300;}
+.BS{background:#fff;color:var(--int);border:1.5px solid var(--int);padding:8px 16px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s;}
+.BS:hover{background:var(--int-light);}
+.BS.ext{color:var(--ext);border-color:var(--ext);}
+.BS.ext:hover{background:var(--ext-light);}
+.BD{background:#fff;color:var(--danger);border:1.5px solid var(--danger);padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:.15s;}
+.BD:hover{background:#fff5f5;}
+.BE{background:#fff;color:var(--muted);border:1.5px solid var(--border);padding:6px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:.15s;}
+.BE:hover{background:var(--bg);}
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-label{font-size:12px;font-weight:600;color:var(--muted);}
+.form-input{padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none;transition:.2s;}
+.form-input:focus{border-color:var(--int);}
+.form-input.mono{font-family:'DM Mono',monospace;letter-spacing:.5px;}
+.form-select{padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:inherit;outline:none;background:#fff;cursor:pointer;}
+.form-actions{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap;}
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:9px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border);}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#fafafa;}
+.mono{font-family:'DM Mono',monospace;font-size:12px;}
+/* TOAST */
+.toast-wrap{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:12px 18px;border-radius:9px;font-size:13px;font-weight:600;color:#fff;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .25s ease;}
+.toast.success{background:var(--success);}
+.toast.error{background:var(--danger);}
+.toast.info{background:var(--int);}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+/* STAT CARDS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);}
+.stat-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+.stat-val{font-size:24px;font-weight:700;margin-top:4px;}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+/* BADGE */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-int{background:var(--int-light);color:var(--int);}
+.badge-ext{background:var(--ext-light);color:var(--ext);}
+/* IMPORT MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:900px;box-shadow:0 12px 40px rgba(0,0,0,.2);}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.modal-title{font-size:17px;font-weight:700;}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);}
+.modal-body{padding:20px 24px;max-height:70vh;overflow-y:auto;}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+/* IMPORT STATUS */
+.import-sheet-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;}
+.import-sheet-name{font-weight:600;font-size:13px;}
+.import-sheet-count{font-size:12px;color:var(--muted);}
+.import-status-ok{color:var(--success);font-weight:700;font-size:12px;}
+.import-status-skip{color:var(--muted);font-weight:700;font-size:12px;}
+.import-status-err{color:var(--danger);font-weight:700;font-size:12px;}
+/* DROP ZONE */
+.drop-zone{border:2.5px dashed var(--border);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:.2s;}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--int);background:var(--int-light);}
+.drop-icon{font-size:36px;margin-bottom:10px;}
+.drop-text{font-size:14px;font-weight:600;color:var(--text);}
+.drop-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+/* PREVIEW TABLE */
+.preview-tbl-wrap{overflow-x:auto;margin-top:12px;border:1px solid var(--border);border-radius:8px;}
+.preview-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.preview-tbl th{background:var(--bg);padding:7px 9px;text-align:left;font-weight:700;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+.preview-tbl td{padding:7px 9px;border-bottom:1px solid var(--border);}
+.preview-tbl tr:last-child td{border-bottom:none;}
+/* SIGN OUT */
+.signout-btn{margin:auto 14px 14px;padding:9px 14px;background:none;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:7px;width:calc(100% - 28px);transition:.15s;}
+.signout-btn:hover{background:var(--bg);color:var(--danger);border-color:var(--danger);}
+/* DATE ROWS */
+.date-rows-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.date-rows-table th{background:#f8f9fc;padding:6px 8px;border:1px solid var(--border);font-size:11px;font-weight:700;color:var(--muted);}
+.date-rows-table td{padding:6px 8px;border:1px solid var(--border);}
+.date-rows-table input,.date-rows-table select{width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:5px;font-size:12px;font-family:inherit;}
+/* EXT DUTY TABLE */
+.ext-duty-hdr{background:#f0e6f7;font-weight:700;color:var(--ext);text-align:center;padding:5px 8px;border:1px solid var(--border);}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+const SUPA_URL = 'https://kfvpjphdmymuokdxsbnj.supabase.co';
+const SUPA_KEY = 'sb_publishable_B6A_RpeE8mTGiq-ZAF-80w_yNj-hF6g';
+const supabase = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ─── CONSTANTS ───────────────────────────────────────────────
+const INT_WORKS = [
+  {id:'CS',label:'Chief Superintendent',short:'CS'},
+  {id:'RHS',label:'Reserve Hall Superintendent',short:'RHS'},
+  {id:'SQUAD',label:'Squad Duty',short:'SQUAD'},
+  {id:'INT_DUTY',label:'Internal Hall Duty',short:'INT DUTY'},
+  {id:'PRACT_INT',label:'Practical — Internal Examiner',short:'PRACT INT'},
+  {id:'PRAC_SKILL',label:'Practical — Skilled Examiner',short:'PRAC SKILL'},
+  {id:'QP_INT',label:'QP Setting (Internal)',short:'QP SETT INT'},
+  {id:'QP_ANS',label:'QP with Answer Key',short:'QP ANS INT'},
+  {id:'SCRUT_INT',label:'QP Scrutiny (Internal)',short:'SCRUTINY INT'},
+  {id:'VAL_PH1_CHIEF',label:'Valuation Ph1 — Chief Examiner',short:'VAL PH1 CHIEF'},
+  {id:'VAL_PH2_CHIEF',label:'Valuation Ph2 — Chief Examiner',short:'VAL PH2 CHIEF'},
+  {id:'VAL_PH1_INT',label:'Valuation Ph1 — Internal',short:'VAL PH1 INT'},
+  {id:'VAL_PH2_INT',label:'Valuation Ph2 — Internal',short:'VAL PH2 INT'},
+  {id:'TABULATOR',label:'Tabulator',short:'TABULATOR'},
+  {id:'DATA_ENTRY',label:'Data Entry',short:'DATA ENTRY'},
+];
+const EXT_WORKS = [
+  {id:'QP_EXT',label:'QP Setting (External)',short:'QP SETTING EXT'},
+  {id:'SCRUT_EXT',label:'QP Scrutiny (External)',short:'SCRUTINY EXT'},
+  {id:'VAL_PH1_EXT',label:'Valuation Ph1 — External',short:'VAL PH1 EXT'},
+  {id:'VAL_PH2_EXT',label:'Valuation Ph2 — External',short:'VAL PH2 EXT'},
+  {id:'PRAC_EXT',label:'Practical — External Examiner',short:'PRAC EXT'},
+  {id:'EXT_DUTY',label:'External Hall Duty',short:'EXT DUTY'},
+];
+const ALL_WORKS = [...INT_WORKS,...EXT_WORKS];
+const DATE_BASED = ['CS','RHS','SQUAD','INT_DUTY','PRACT_INT','PRAC_SKILL','PRAC_EXT','EXT_DUTY'];
+
+// Sheet name → work type ID mapping (for Excel import)
+const SHEET_TO_WORK = {
+  'CS':'CS','CS ':'CS',
+  'RHS':'RHS','RHS ND25':'RHS',
+  'SQUAD':'SQUAD','SQUAD ':'SQUAD',
+  'INT DUTY':'INT_DUTY',
+  'PRACT INT & GUIDE':'PRACT_INT',
+  'PRAC SKILL':'PRAC_SKILL',
+  'QP SETT INT':'QP_INT',
+  'QP ANS INT':'QP_ANS',
+  'SCRUTINY INT':'SCRUT_INT',
+  'VAL PH1 CHIEF':'VAL_PH1_CHIEF',
+  'VAL PH2 CHIEF':'VAL_PH2_CHIEF',
+  'VAL PH1 INT':'VAL_PH1_INT',
+  'VAL PH2 INT':'VAL_PH2_INT',
+  'TABULATOR':'TABULATOR',
+  'DATA ENTRY':'DATA_ENTRY',
+  'QP SETTING EXT':'QP_EXT',
+  'SCRUTINY EXT':'SCRUT_EXT',
+  'VAL PH1 EXT':'VAL_PH1_EXT',
+  'VAL PH2 EXT':'VAL_PH2_EXT',
+  'PRAC EXT':'PRAC_EXT',
+  'EXT DUTY':'EXT_DUTY',
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────
+function fmt(n){return n?'₹'+Number(n).toLocaleString('en-IN'):'₹0';}
+function useToast(){
+  const [toasts,setToasts]=useState([]);
+  const show=(msg,type='info')=>{
+    const id=Date.now();
+    setToasts(t=>[...t,{id,msg,type}]);
+    setTimeout(()=>setToasts(t=>t.filter(x=>x.id!==id)),3500);
+  };
+  return{toasts,show};
+}
+function Toasts({toasts}){
+  return <div className="toast-wrap">{toasts.map(t=><div key={t.id} className={`toast ${t.type}`}>{t.msg}</div>)}</div>;
+}
+function newRow(){return {date:'',session:'FN',no_sessions:1,ehs_rem:0,ehs_lump:0,ehs_total:0,ihs_rem:0,rhs_rem:0,row_total:0};}
+function calcExtDutyRow(r){
+  const ehs=Number(r.ehs_rem||0)+Number(r.ehs_lump||0);
+  return {...r,ehs_total:ehs,row_total:ehs+Number(r.ihs_rem||0)+Number(r.rhs_rem||0)};
+}
+
+// ─── EXCEL IMPORT PARSER ─────────────────────────────────────
+function parseSheetToRows(ws, workTypeId){
+  const raw = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  // Find header row: look for row containing typical column name
+  let headerIdx = -1;
+  const keywords = ['name','s.no','sno','s. no'];
+  for(let i=0;i<raw.length;i++){
+    const rowStr = raw[i].map(c=>String(c||'').toLowerCase()).join(' ');
+    if(keywords.some(k=>rowStr.includes(k))){headerIdx=i;break;}
+  }
+  if(headerIdx<0) return [];
+  const headers = raw[headerIdx].map(c=>String(c||'').toLowerCase().trim());
+  const dataRows = raw.slice(headerIdx+1).filter(r=>r.some(c=>c!==''&&c!==null&&c!==undefined));
+
+  const col=(h,aliases)=>{
+    const found=aliases.findIndex(a=>h.includes(a));
+    return found>=0?found:-1; // placeholder — we search headers
+  };
+  const hIdx=(aliases)=>{
+    for(const a of aliases){
+      const i=headers.findIndex(h=>h.includes(a));
+      if(i>=0)return i;
+    }
+    return -1;
+  };
+
+  const iName=hIdx(['name','superintendent','examiner','faculty','staff','internal','external']);
+  const iDept=hIdx(['dept','department']);
+  const iAmt=hIdx(['amount','amt','total']);
+  const iAC=hIdx(['account','ac no','a/c']);
+  const iIFSC=hIdx(['ifsc']);
+  const iBank=hIdx(['bank']);
+  const iBranch=hIdx(['branch']);
+  const iMobile=hIdx(['mobile','phone']);
+  const iCollege=hIdx(['college']);
+  const iClaim=hIdx(['claim']);
+  const iSubjCode=hIdx(['subject code','code']);
+  const iSubjName=hIdx(['subject name']);
+  const iBoard=hIdx(['board']);
+  const iDesig=hIdx(['designation','design']);
+  const iDate=hIdx(['date']);
+  const iSession=hIdx(['session','fn','an']);
+
+  return dataRows.map(r=>{
+    const get=(i)=>i>=0?String(r[i]||'').trim():'';
+    const getN=(i)=>i>=0?parseFloat(r[i])||0:0;
+    return {
+      name:get(iName),designation:get(iDesig),dept:get(iDept),
+      account_no:get(iAC),ifsc:get(iIFSC),bank_name:get(iBank),
+      branch:get(iBranch),mobile:get(iMobile),college:get(iCollege),
+      claim_desc:get(iClaim),subject_code:get(iSubjCode),
+      subject_name:get(iSubjName),board_name:get(iBoard),
+      amount:getN(iAmt),
+      date:get(iDate),session:get(iSession)||'FN',no_sessions:1,
+    };
+  }).filter(r=>r.name&&r.name.toLowerCase()!=='name');
+}
+
+// ─── EMPTY CLAIM ─────────────────────────────────────────────
+function emptyClaim(workTypeId,seasonId){
+  return {
+    work_type_id:workTypeId,season_id:seasonId,
+    name:'',designation:'',dept:'',college:'',
+    account_no:'',ifsc:'',bank_name:'',branch:'',district:'',mobile:'',
+    amount:0,claim_desc:'',board_name:'',
+    subject_code:'',subject_name:'',
+    no_sessions:1,
+    date_rows:[newRow()],
+  };
+}
+
+// ─── WORK TYPE SCREEN ─────────────────────────────────────────
+function WorkScreen({wt,season,toast}){
+  const isInt=INT_WORKS.some(w=>w.id===wt.id);
+  const isDateBased=DATE_BASED.includes(wt.id);
+  const isExtDuty=wt.id==='EXT_DUTY';
+  const isQP=['QP_INT','QP_ANS','QP_EXT'].includes(wt.id);
+  const isScrutiny=['SCRUT_INT','SCRUT_EXT'].includes(wt.id);
+  const isVal=['VAL_PH1_CHIEF','VAL_PH2_CHIEF','VAL_PH1_INT','VAL_PH2_INT','VAL_PH1_EXT','VAL_PH2_EXT'].includes(wt.id);
+  const isTabData=['TABULATOR','DATA_ENTRY'].includes(wt.id);
+  const isPrac=['PRACT_INT','PRAC_SKILL','PRAC_EXT'].includes(wt.id);
+  const accentClass=isInt?'':'ext';
+
+  const [claims,setClaims]=useState([]);
+  const [form,setForm]=useState(emptyClaim(wt.id,season?.id));
+  const [editing,setEditing]=useState(null);
+  const [loading,setLoading]=useState(false);
+
+  useEffect(()=>{if(season)load();},[season,wt.id]);
+  async function load(){
+    setLoading(true);
+    const {data}=await supabase.from('claims').select('*,claim_date_rows(*)').eq('work_type_id',wt.id).eq('season_id',season.id).order('id');
+    if(data)setClaims(data);
+    setLoading(false);
+  }
+
+  const fld=(k,v)=>{
+    if(k==='no_sessions'){
+      const rate=isInt?150:150;
+      setForm(f=>({...f,[k]:v,amount:v*rate}));
+    } else setForm(f=>({...f,[k]:v}));
+  };
+  const setDateRow=(i,k,v)=>{
+    setForm(f=>{
+      const rows=[...f.date_rows];
+      rows[i]={...rows[i],[k]:v};
+      if(isExtDuty) rows[i]=calcExtDutyRow(rows[i]);
+      const total=rows.reduce((s,r)=>s+(isExtDuty?Number(r.row_total||0):Number(r.no_sessions||0)*150),0);
+      return {...f,date_rows:rows,amount:total};
+    });
+  };
+  const addDateRow=()=>setForm(f=>({...f,date_rows:[...f.date_rows,newRow()]}));
+  const removeDateRow=(i)=>setForm(f=>({...f,date_rows:f.date_rows.filter((_,j)=>j!==i)}));
+
+  async function save(){
+    if(!form.name){toast.show('Name is required','error');return;}
+    setLoading(true);
+    const payload={
+      work_type_id:form.work_type_id,season_id:form.season_id,
+      name:form.name,designation:form.designation,dept:form.dept,
+      college:form.college,account_no:form.account_no,ifsc:form.ifsc,
+      bank_name:form.bank_name,branch:form.branch,district:form.district,
+      mobile:form.mobile,amount:form.amount,claim_desc:form.claim_desc,
+      board_name:form.board_name,subject_code:form.subject_code,
+      subject_name:form.subject_name,no_sessions:form.no_sessions,
+    };
+    let claimId=editing;
+    if(editing){
+      const {error}=await supabase.from('claims').update(payload).eq('id',editing);
+      if(error){toast.show('Update failed: '+error.message,'error');setLoading(false);return;}
+    } else {
+      const {data,error}=await supabase.from('claims').insert([payload]).select().single();
+      if(error){toast.show('Save failed: '+error.message,'error');setLoading(false);return;}
+      claimId=data.id;
+    }
+    if(isDateBased && claimId){
+      await supabase.from('claim_date_rows').delete().eq('claim_id',claimId);
+      const datePayload=form.date_rows.map(r=>({claim_id:claimId,...r}));
+      await supabase.from('claim_date_rows').insert(datePayload);
+    }
+    toast.show(editing?'Updated!':'Saved!','success');
+    setEditing(null);setForm(emptyClaim(wt.id,season.id));load();
+  }
+
+  async function del(id){
+    if(!confirm('Delete this entry?'))return;
+    await supabase.from('claim_date_rows').delete().eq('claim_id',id);
+    await supabase.from('claims').delete().eq('id',id);
+    toast.show('Deleted','info');load();
+  }
+
+  function startEdit(c){
+    setEditing(c.id);
+    setForm({...c,date_rows:c.claim_date_rows&&c.claim_date_rows.length?c.claim_date_rows:[newRow()]});
+    window.scrollTo(0,0);
+  }
+
+  function exportSheet(){
+    const wb=XLSX.utils.book_new();
+    const rows=[[
+      'S.No','Name','Designation','Dept','College','Mobile',
+      'Account No','IFSC','Bank','Branch','District',
+      ...(isQP?['Subject Code','Subject Name']:[]),
+      ...(isVal||isScrutiny||isTabData?['Claim']:[]),
+      ...(isVal?['Board Name']:[]),
+      'Amount'
+    ]];
+    claims.forEach((c,i)=>{
+      rows.push([
+        i+1,c.name,c.designation||'',c.dept||'',c.college||'',c.mobile||'',
+        c.account_no||'',c.ifsc||'',c.bank_name||'',c.branch||'',c.district||'',
+        ...(isQP?[c.subject_code||'',c.subject_name||'']:[]),
+        ...(isVal||isScrutiny||isTabData?[c.claim_desc||'']:[]),
+        ...(isVal?[c.board_name||'']:[]),
+        c.amount||0
+      ]);
+    });
+    rows.push(['','','','','','','','','','','','','TOTAL','',claims.reduce((s,c)=>s+Number(c.amount||0),0)]);
+    const ws=XLSX.utils.aoa_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb,ws,wt.short);
+    XLSX.writeFile(wb,`${wt.label} - ${season?.name||''}.xlsx`);
+  }
+
+  const totalAmt=claims.reduce((s,c)=>s+Number(c.amount||0),0);
+
+  return (
+    <div>
+      <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:10}}>
+        <div>
+          <div className="page-title">{wt.label}</div>
+          <div className="page-sub">{season?.name} · {claims.length} entries · {fmt(totalAmt)}</div>
+        </div>
+        <button className={`BS ${accentClass}`} onClick={exportSheet}>⬇ Download Excel</button>
+      </div>
+
+      {/* FORM */}
+      <div className="card">
+        <div style={{fontWeight:700,marginBottom:14,fontSize:14}}>{editing?'✏️ Edit Entry':'➕ Add Entry'}</div>
+        <div className="form-grid">
+          <div className="form-group"><label className="form-label">Name *</label><input className="form-input" value={form.name} onChange={e=>fld('name',e.target.value)} placeholder="Full name"/></div>
+          <div className="form-group"><label className="form-label">Designation</label><input className="form-input" value={form.designation||''} onChange={e=>fld('designation',e.target.value)} placeholder="e.g. AP/CSE"/></div>
+          {!['PRACT_INT','PRAC_SKILL','PRAC_EXT','QP_INT','QP_ANS','QP_EXT','SCRUT_INT','SCRUT_EXT','TABULATOR','DATA_ENTRY'].includes(wt.id)&&
+            <div className="form-group"><label className="form-label">Department</label><input className="form-input" value={form.dept||''} onChange={e=>fld('dept',e.target.value)} placeholder="Dept"/></div>
+          }
+          {['QP_INT','QP_ANS','SCRUT_INT','PRACT_INT','PRAC_SKILL'].includes(wt.id)&&
+            <div className="form-group"><label className="form-label">Department</label><input className="form-input" value={form.dept||''} onChange={e=>fld('dept',e.target.value)} placeholder="Dept"/></div>
+          }
+          {isVal&&<div className="form-group"><label className="form-label">Department</label><input className="form-input" value={form.dept||''} onChange={e=>fld('dept',e.target.value)} placeholder="Dept"/></div>}
+          <div className="form-group"><label className="form-label">College</label><input className="form-input" value={form.college||''} onChange={e=>fld('college',e.target.value)} placeholder="College name"/></div>
+          <div className="form-group"><label className="form-label">Mobile</label><input className="form-input mono" value={form.mobile||''} onChange={e=>fld('mobile',e.target.value)} placeholder="Mobile"/></div>
+        </div>
+        <div className="form-grid">
+          <div className="form-group"><label className="form-label">Account No</label><input className="form-input mono" value={form.account_no||''} onChange={e=>fld('account_no',e.target.value)} placeholder="Account number"/></div>
+          <div className="form-group"><label className="form-label">IFSC Code</label><input className="form-input mono" value={form.ifsc||''} onChange={e=>fld('ifsc',e.target.value.toUpperCase())} placeholder="IFSC"/></div>
+          <div className="form-group"><label className="form-label">Bank Name</label><input className="form-input" value={form.bank_name||''} onChange={e=>fld('bank_name',e.target.value)} placeholder="Bank name"/></div>
+          <div className="form-group"><label className="form-label">Branch</label><input className="form-input" value={form.branch||''} onChange={e=>fld('branch',e.target.value)} placeholder="Branch"/></div>
+          <div className="form-group"><label className="form-label">District</label><input className="form-input" value={form.district||''} onChange={e=>fld('district',e.target.value)} placeholder="District"/></div>
+        </div>
+        {isQP&&<div className="form-grid">
+          <div className="form-group"><label className="form-label">Subject Code</label><input className="form-input mono" value={form.subject_code||''} onChange={e=>fld('subject_code',e.target.value)} placeholder="Subject code"/></div>
+          <div className="form-group"><label className="form-label">Subject Name</label><input className="form-input" value={form.subject_name||''} onChange={e=>fld('subject_name',e.target.value)} placeholder="Subject name"/></div>
+        </div>}
+        {(isVal||isScrutiny||isTabData)&&<div className="form-grid">
+          {isVal&&<div className="form-group"><label className="form-label">Board Name</label><input className="form-input" value={form.board_name||''} onChange={e=>fld('board_name',e.target.value)} placeholder="Board name"/></div>}
+          <div className="form-group"><label className="form-label">Claim Description</label><input className="form-input" value={form.claim_desc||''} onChange={e=>fld('claim_desc',e.target.value)} placeholder="Claim description"/></div>
+        </div>}
+        {!isDateBased&&<div className="form-grid" style={{maxWidth:220}}>
+          <div className="form-group"><label className="form-label">Amount (₹)</label><input type="number" className="form-input" value={form.amount||0} onChange={e=>fld('amount',e.target.value)}/></div>
+        </div>}
+        {isDateBased&&!isExtDuty&&(
+          <div style={{marginTop:12}}>
+            <div style={{fontWeight:700,fontSize:13,marginBottom:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              Date / Session Rows
+              <button className="BS" style={{fontSize:12,padding:'5px 11px'}} onClick={addDateRow}>+ Add Row</button>
+            </div>
+            <div className="tbl-wrap">
+              <table className="date-rows-table">
+                <thead><tr><th>Date</th><th>Session</th><th>No. of Sessions</th><th>Rate</th><th>Amount</th><th></th></tr></thead>
+                <tbody>{form.date_rows.map((r,i)=>{
+                  const rate=150;
+                  const amt=Number(r.no_sessions||0)*rate;
+                  return <tr key={i}>
+                    <td><input type="date" value={r.date||''} onChange={e=>setDateRow(i,'date',e.target.value)}/></td>
+                    <td><select value={r.session||'FN'} onChange={e=>setDateRow(i,'session',e.target.value)}><option>FN</option><option>AN</option><option>Both</option></select></td>
+                    <td><input type="number" min="1" value={r.no_sessions||1} onChange={e=>setDateRow(i,'no_sessions',e.target.value)}/></td>
+                    <td style={{color:'var(--muted)',fontSize:12}}>₹{rate}/session</td>
+                    <td style={{fontWeight:700}}>{fmt(amt)}</td>
+                    <td><button className="BD" onClick={()=>removeDateRow(i)}>✕</button></td>
+                  </tr>;
+                })}</tbody>
+                <tfoot><tr><td colSpan={4} style={{fontWeight:700,textAlign:'right'}}>Total</td><td colSpan={2} style={{fontWeight:700,color:'var(--int)'}}>{fmt(form.amount)}</td></tr></tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+        {isExtDuty&&(
+          <div style={{marginTop:12}}>
+            <div style={{fontWeight:700,fontSize:13,marginBottom:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              Date / Session Rows
+              <button className="BS ext" style={{fontSize:12,padding:'5px 11px'}} onClick={addDateRow}>+ Add Row</button>
+            </div>
+            <div className="tbl-wrap">
+              <table className="date-rows-table">
+                <thead>
+                  <tr>
+                    <th rowSpan={2}>Date</th>
+                    <th rowSpan={2}>Session</th>
+                    <th className="ext-duty-hdr" colSpan={3}>EXTERNAL (EHS)</th>
+                    <th className="ext-duty-hdr" style={{background:'#e8f0fb',color:'var(--int)'}}>INTERNAL (IHS)</th>
+                    <th className="ext-duty-hdr" style={{background:'#f0faf4',color:'#276749'}}>RESERVE (RHS)</th>
+                    <th rowSpan={2}>Row Total</th>
+                    <th rowSpan={2}></th>
+                  </tr>
+                  <tr>
+                    <th>Remuneration</th><th>Lumpsum Allowance</th><th>EHS Total</th>
+                    <th>Remuneration</th><th>Remuneration</th>
+                  </tr>
+                </thead>
+                <tbody>{form.date_rows.map((r,i)=>(
+                  <tr key={i}>
+                    <td><input type="date" value={r.date||''} onChange={e=>setDateRow(i,'date',e.target.value)}/></td>
+                    <td><select value={r.session||'FN'} onChange={e=>setDateRow(i,'session',e.target.value)}><option>FN</option><option>AN</option><option>Both</option></select></td>
+                    <td><input type="number" min="0" value={r.ehs_rem||0} onChange={e=>setDateRow(i,'ehs_rem',e.target.value)}/></td>
+                    <td><input type="number" min="0" value={r.ehs_lump||0} onChange={e=>setDateRow(i,'ehs_lump',e.target.value)}/></td>
+                    <td style={{fontWeight:700,color:'var(--ext)'}}>{fmt(r.ehs_total||0)}</td>
+                    <td><input type="number" min="0" value={r.ihs_rem||0} onChange={e=>setDateRow(i,'ihs_rem',e.target.value)}/></td>
+                    <td><input type="number" min="0" value={r.rhs_rem||0} onChange={e=>setDateRow(i,'rhs_rem',e.target.value)}/></td>
+                    <td style={{fontWeight:700}}>{fmt(r.row_total||0)}</td>
+                    <td><button className="BD" onClick={()=>removeDateRow(i)}>✕</button></td>
+                  </tr>
+                ))}</tbody>
+                <tfoot><tr><td colSpan={7} style={{fontWeight:700,textAlign:'right'}}>Grand Total</td><td colSpan={2} style={{fontWeight:700,color:'var(--ext)'}}>{fmt(form.amount)}</td></tr></tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+        <div className="form-actions">
+          <button className={`BP ${accentClass}`} onClick={save}>{editing?'Update Entry':'Add Entry'}</button>
+          {editing&&<button className="BE" onClick={()=>{setEditing(null);setForm(emptyClaim(wt.id,season.id));}}>Cancel</button>}
+        </div>
+      </div>
+
+      {/* TABLE */}
+      <div className="card">
+        <div className="tbl-wrap">
+          {loading?<div style={{padding:20,textAlign:'center',color:'var(--muted)'}}>Loading…</div>:
+          claims.length===0?<div style={{padding:20,textAlign:'center',color:'var(--muted)'}}>No entries yet.</div>:
+          <table>
+            <thead><tr>
+              <th>#</th><th>Name</th><th>Designation</th><th>Dept/College</th>
+              {isQP&&<><th>Subject Code</th><th>Subject Name</th></>}
+              {isVal&&<th>Board</th>}
+              {(isVal||isScrutiny||isTabData)&&<th>Claim</th>}
+              <th>Account</th><th>IFSC</th><th>Bank/Branch</th>
+              <th>Amount</th><th>Actions</th>
+            </tr></thead>
+            <tbody>{claims.map((c,i)=>(
+              <tr key={c.id}>
+                <td>{i+1}</td>
+                <td style={{fontWeight:600}}>{c.name}</td>
+                <td>{c.designation||'-'}</td>
+                <td>{c.dept||c.college||'-'}</td>
+                {isQP&&<><td className="mono">{c.subject_code||'-'}</td><td>{c.subject_name||'-'}</td></>}
+                {isVal&&<td>{c.board_name||'-'}</td>}
+                {(isVal||isScrutiny||isTabData)&&<td style={{maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.claim_desc||'-'}</td>}
+                <td className="mono">{c.account_no||'-'}</td>
+                <td className="mono">{c.ifsc||'-'}</td>
+                <td style={{fontSize:12}}>{[c.bank_name,c.branch].filter(Boolean).join(' / ')||'-'}</td>
+                <td style={{fontWeight:700}}>{fmt(c.amount)}</td>
+                <td><div style={{display:'flex',gap:'6px'}}><button className="BE" onClick={()=>startEdit(c)}>✏️</button><button className="BD" onClick={()=>del(c.id)}>🗑</button></div></td>
+              </tr>
+            ))}</tbody>
+            <tfoot><tr>
+              <td colSpan={isQP?8:isVal?7:6} style={{fontWeight:700,textAlign:'right'}}>TOTAL</td>
+              <td colSpan={4} style={{fontWeight:700,color:isInt?'var(--int)':'var(--ext)'}}>{fmt(totalAmt)}</td>
+            </tr></tfoot>
+          </table>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── IMPORT MODAL ─────────────────────────────────────────────
+function ImportModal({season,toast,onClose}){
+  const [sheets,setSheets]=useState([]); // [{sheetName, workTypeId, rows, status}]
+  const [step,setStep]=useState('upload'); // upload | preview | saving | done
+  const [saving,setSaving]=useState(false);
+  const fileRef=useRef();
+
+  function handleFile(file){
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=(e)=>{
+      try{
+        const wb=XLSX.read(e.target.result,{type:'binary'});
+        const parsed=[];
+        wb.SheetNames.forEach(sn=>{
+          const workTypeId=SHEET_TO_WORK[sn]||SHEET_TO_WORK[sn.trim()];
+          if(!workTypeId){parsed.push({sheetName:sn,workTypeId:null,rows:[],status:'skip'});return;}
+          const ws=wb.Sheets[sn];
+          const rows=parseSheetToRows(ws,workTypeId);
+          parsed.push({sheetName:sn,workTypeId,rows,status:rows.length>0?'ready':'empty'});
+        });
+        setSheets(parsed);
+        setStep('preview');
+      }catch(err){toast.show('Error reading file: '+err.message,'error');}
+    };
+    reader.readAsBinaryString(file);
+  }
+
+  async function saveAll(){
+    setSaving(true);setStep('saving');
+    let totalSaved=0,totalFailed=0;
+    const updated=[...sheets];
+    for(let i=0;i<updated.length;i++){
+      const s=updated[i];
+      if(s.status!=='ready'||!s.rows.length)continue;
+      let success=0,failed=0;
+      for(const row of s.rows){
+        const payload={
+          work_type_id:s.workTypeId,season_id:season.id,
+          name:row.name||'',designation:row.designation||'',
+          dept:row.dept||'',college:row.college||'',
+          account_no:row.account_no||'',ifsc:row.ifsc||'',
+          bank_name:row.bank_name||'',branch:row.branch||'',
+          mobile:row.mobile||'',amount:row.amount||0,
+          claim_desc:row.claim_desc||'',board_name:row.board_name||'',
+          subject_code:row.subject_code||'',subject_name:row.subject_name||'',
+          no_sessions:row.no_sessions||1,
+        };
+        const {data,error}=await supabase.from('claims').insert([payload]).select().single();
+        if(error){failed++;continue;}
+        // If date-based, insert a date row
+        if(DATE_BASED.includes(s.workTypeId)&&row.date&&data){
+          await supabase.from('claim_date_rows').insert([{
+            claim_id:data.id,date:row.date,session:row.session||'FN',no_sessions:row.no_sessions||1,
+          }]);
+        }
+        success++;
+      }
+      totalSaved+=success;totalFailed+=failed;
+      updated[i]={...s,status:failed===0?'saved':`partial (${success}/${s.rows.length})`};
+    }
+    setSheets(updated);setSaving(false);setStep('done');
+    toast.show(`Import complete: ${totalSaved} saved, ${totalFailed} failed`,'success');
+  }
+
+  const readyCount=sheets.filter(s=>s.status==='ready').length;
+  const totalRows=sheets.reduce((n,s)=>n+(s.rows?.length||0),0);
+
+  return (
+    <div className="modal-bg" onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
+      <div className="modal">
+        <div className="modal-header">
+          <div className="modal-title">📥 Import from Excel</div>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          {step==='upload'&&(
+            <div>
+              <p style={{fontSize:13,color:'var(--muted)',marginBottom:16}}>
+                Upload an Excel file with one or more sheets matching your MODEL_CLAIM format. Each sheet will be automatically routed to the correct work type.
+              </p>
+              <div className="drop-zone" onClick={()=>fileRef.current.click()} onDragOver={e=>{e.preventDefault();e.currentTarget.classList.add('drag');}} onDragLeave={e=>e.currentTarget.classList.remove('drag')} onDrop={e=>{e.preventDefault();e.currentTarget.classList.remove('drag');handleFile(e.dataTransfer.files[0]);}}>
+                <div className="drop-icon">📂</div>
+                <div className="drop-text">Click or drag & drop your Excel file here</div>
+                <div className="drop-sub">Supports .xlsx and .xls files · Sheet names must match work type names</div>
+              </div>
+              <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:'none'}} onChange={e=>handleFile(e.target.files[0])}/>
+              <div style={{marginTop:16,background:'var(--bg)',border:'1px solid var(--border)',borderRadius:8,padding:14}}>
+                <div style={{fontWeight:700,fontSize:13,marginBottom:8}}>Recognised Sheet Names</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:4}}>
+                  {Object.entries(SHEET_TO_WORK).map(([sn,wt])=>(
+                    <div key={sn} style={{fontSize:11,padding:'3px 7px',background:'#fff',border:'1px solid var(--border)',borderRadius:5}}>
+                      <span style={{fontFamily:'DM Mono',color:'var(--muted)'}}>{sn}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          {(step==='preview'||step==='done')&&(
+            <div>
+              <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>
+                {step==='done'?'✅ Import Complete':'📋 Preview — Review before saving'}
+              </div>
+              {sheets.map((s,i)=>(
+                <div key={i} className="import-sheet-row">
+                  <div>
+                    <div className="import-sheet-name">{s.sheetName}</div>
+                    <div className="import-sheet-count">
+                      {s.workTypeId?ALL_WORKS.find(w=>w.id===s.workTypeId)?.label:'—'}
+                      {s.rows?.length>0&&` · ${s.rows.length} rows`}
+                    </div>
+                  </div>
+                  <div>
+                    {s.status==='ready'&&<span className="import-status-ok">✓ {s.rows.length} rows ready</span>}
+                    {s.status==='skip'&&<span className="import-status-skip">⊘ Sheet not recognised</span>}
+                    {s.status==='empty'&&<span className="import-status-skip">⊘ No data rows found</span>}
+                    {s.status==='saved'&&<span className="import-status-ok">✅ Saved</span>}
+                    {s.status?.startsWith('partial')&&<span className="import-status-err">⚠️ {s.status}</span>}
+                  </div>
+                </div>
+              ))}
+              {/* Preview table for first ready sheet */}
+              {step==='preview'&&sheets.find(s=>s.status==='ready')&&(
+                <div style={{marginTop:16}}>
+                  <div style={{fontWeight:700,fontSize:13,marginBottom:6}}>Preview (first matched sheet)</div>
+                  <div className="preview-tbl-wrap">
+                    <table className="preview-tbl">
+                      <thead><tr>
+                        <th>#</th><th>Name</th><th>Designation</th><th>Dept</th><th>Account</th><th>IFSC</th><th>Bank</th><th>Amount</th>
+                      </tr></thead>
+                      <tbody>{sheets.find(s=>s.status==='ready').rows.slice(0,8).map((r,i)=>(
+                        <tr key={i}>
+                          <td>{i+1}</td><td>{r.name}</td><td>{r.designation||'-'}</td><td>{r.dept||'-'}</td>
+                          <td className="mono">{r.account_no||'-'}</td><td className="mono">{r.ifsc||'-'}</td>
+                          <td>{r.bank_name||'-'}</td><td style={{fontWeight:700}}>{fmt(r.amount)}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                    {sheets.find(s=>s.status==='ready').rows.length>8&&
+                      <div style={{textAlign:'center',padding:8,fontSize:12,color:'var(--muted)'}}>
+                        …and {sheets.find(s=>s.status==='ready').rows.length-8} more rows
+                      </div>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {step==='saving'&&<div style={{textAlign:'center',padding:40,fontSize:15,color:'var(--muted)'}}>⏳ Saving to database…</div>}
+        </div>
+        <div className="modal-footer">
+          {step==='upload'&&<button className="BE" onClick={onClose}>Cancel</button>}
+          {step==='preview'&&<>
+            <button className="BE" onClick={()=>setStep('upload')}>← Back</button>
+            <button className="BP" onClick={saveAll} disabled={readyCount===0}>
+              Save {totalRows} Rows to Database
+            </button>
+          </>}
+          {step==='done'&&<button className="BP" onClick={onClose}>Done</button>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DASHBOARD ───────────────────────────────────────────────
+function Dashboard({season,toast}){
+  const [stats,setStats]=useState([]);
+  const [importOpen,setImportOpen]=useState(false);
+  const [loading,setLoading]=useState(false);
+
+  useEffect(()=>{if(season)loadStats();},[season]);
+
+  async function loadStats(){
+    setLoading(true);
+    const {data}=await supabase.from('claims').select('work_type_id,amount').eq('season_id',season.id);
+    if(data){
+      const grouped={};
+      data.forEach(r=>{
+        if(!grouped[r.work_type_id])grouped[r.work_type_id]={count:0,total:0};
+        grouped[r.work_type_id].count++;
+        grouped[r.work_type_id].total+=Number(r.amount||0);
+      });
+      setStats(grouped);
+    }
+    setLoading(false);
+  }
+
+  const totalInt=INT_WORKS.reduce((s,w)=>s+Number(stats[w.id]?.total||0),0);
+  const totalExt=EXT_WORKS.reduce((s,w)=>s+Number(stats[w.id]?.total||0),0);
+  const totalAll=totalInt+totalExt;
+  const totalCount=Object.values(stats).reduce((s,v)=>s+v.count,0);
+
+  function exportAll(){
+    const wb=XLSX.utils.book_new();
+    // Placeholder - actual export happens from each work type
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['Use individual Download buttons for each work type']]),'README');
+    XLSX.writeFile(wb,`COE Claims - ${season?.name||''}.xlsx`);
+    toast.show('Use individual Download Excel buttons on each work type screen for full export','info');
+  }
+
+  return (
+    <div>
+      {importOpen&&<ImportModal season={season} toast={toast} onClose={()=>{setImportOpen(false);loadStats();}}/>}
+      <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:10}}>
+        <div>
+          <div className="page-title">Dashboard</div>
+          <div className="page-sub">{season?.name} — COE Claims Overview</div>
+        </div>
+        <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          <button className="BP" onClick={()=>setImportOpen(true)}>📥 Import from Excel</button>
+          <button className="BS gold" onClick={exportAll}>⬇ Export All Sheets</button>
+        </div>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-label">Total Entries</div><div className="stat-val">{totalCount}</div><div className="stat-sub">Across all work types</div></div>
+        <div className="stat-card"><div className="stat-label">Total Claims</div><div className="stat-val" style={{color:'var(--gold)'}}>{fmt(totalAll)}</div><div className="stat-sub">All staff combined</div></div>
+        <div className="stat-card"><div className="stat-label">Internal Staff</div><div className="stat-val" style={{color:'var(--int)'}}>{fmt(totalInt)}</div><div className="stat-sub">{INT_WORKS.reduce((s,w)=>s+(stats[w.id]?.count||0),0)} entries</div></div>
+        <div className="stat-card"><div className="stat-label">External Staff</div><div className="stat-val" style={{color:'var(--ext)'}}>{fmt(totalExt)}</div><div className="stat-sub">{EXT_WORKS.reduce((s,w)=>s+(stats[w.id]?.count||0),0)} entries</div></div>
+      </div>
+
+      <div className="card">
+        <div style={{fontWeight:700,fontSize:14,marginBottom:14}}>Internal Staff Works</div>
+        <div className="tbl-wrap">
+          <table>
+            <thead><tr><th>Work Type</th><th>Entries</th><th>Total Amount</th></tr></thead>
+            <tbody>{INT_WORKS.map(w=>(
+              <tr key={w.id}>
+                <td><span className="badge badge-int">{w.short}</span> {w.label}</td>
+                <td>{stats[w.id]?.count||0}</td>
+                <td style={{fontWeight:600,color:'var(--int)'}}>{fmt(stats[w.id]?.total||0)}</td>
+              </tr>
+            ))}</tbody>
+            <tfoot><tr><td style={{fontWeight:700}}>TOTAL</td><td style={{fontWeight:700}}>{INT_WORKS.reduce((s,w)=>s+(stats[w.id]?.count||0),0)}</td><td style={{fontWeight:700,color:'var(--int)'}}>{fmt(totalInt)}</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div className="card">
+        <div style={{fontWeight:700,fontSize:14,marginBottom:14}}>External Staff Works</div>
+        <div className="tbl-wrap">
+          <table>
+            <thead><tr><th>Work Type</th><th>Entries</th><th>Total Amount</th></tr></thead>
+            <tbody>{EXT_WORKS.map(w=>(
+              <tr key={w.id}>
+                <td><span className="badge badge-ext">{w.short}</span> {w.label}</td>
+                <td>{stats[w.id]?.count||0}</td>
+                <td style={{fontWeight:600,color:'var(--ext)'}}>{fmt(stats[w.id]?.total||0)}</td>
+              </tr>
+            ))}</tbody>
+            <tfoot><tr><td style={{fontWeight:700}}>TOTAL</td><td style={{fontWeight:700}}>{EXT_WORKS.reduce((s,w)=>s+(stats[w.id]?.count||0),0)}</td><td style={{fontWeight:700,color:'var(--ext)'}}>{fmt(totalExt)}</td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CONSOLIDATED ─────────────────────────────────────────────
+function Consolidated({type,season,toast}){
+  const isInt=type==='int';
+  const [rows,setRows]=useState([]);
+  const [loading,setLoading]=useState(false);
+
+  useEffect(()=>{if(season)load();},[season,type]);
+  async function load(){
+    setLoading(true);
+    const workIds=(isInt?INT_WORKS:EXT_WORKS).map(w=>w.id);
+    const {data}=await supabase.from('claims').select('*').in('work_type_id',workIds).eq('season_id',season.id).order('name');
+    if(data)setRows(data);
+    setLoading(false);
+  }
+
+  function exportConsolidated(){
+    const wb=XLSX.utils.book_new();
+    const header=isInt
+      ?['S.No','Name','Dept','Account No','IFSC Code','Branch','Bank','Mobile No','Amount']
+      :['S.No','Name','Claim','Account No','IFSC Code','Bank','Branch','Phone Number','College Name','Amount'];
+    const dataRows=rows.map((r,i)=>isInt
+      ?[i+1,r.name,r.dept||'',r.account_no||'',r.ifsc||'',r.branch||'',r.bank_name||'',r.mobile||'',r.amount||0]
+      :[i+1,r.name,r.claim_desc||'',r.account_no||'',r.ifsc||'',r.bank_name||'',r.branch||'',r.mobile||'',r.college||'',r.amount||0]);
+    const total=rows.reduce((s,r)=>s+Number(r.amount||0),0);
+    const ws=XLSX.utils.aoa_to_sheet([
+      ['OFFICE OF THE CONTROLLER OF EXAMINATIONS'],
+      ['Er. PERUMAL MANIMEKALAI COLLEGE OF ENGINEERING'],
+      [isInt?'Remuneration of Internal Staff':'Remuneration of EXTERNALS'],
+      [`End Semester Examination — ${season?.name||''}`],
+      [],
+      header,
+      ...dataRows,
+      [],
+      ['','','','','','','','TOTAL','',total],
+      [],
+      ['DCOE','','COE','','PRINCIPAL'],
+    ]);
+    XLSX.utils.book_append_sheet(wb,ws,isInt?'CONSOLIDATE INT':'CONSOLIDATE EXT');
+    XLSX.writeFile(wb,`Consolidated ${isInt?'Internal':'External'} - ${season?.name||''}.xlsx`);
+  }
+
+  const total=rows.reduce((s,r)=>s+Number(r.amount||0),0);
+
+  return (
+    <div>
+      <div className="page-header" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:10}}>
+        <div>
+          <div className="page-title">{isInt?'Internal':'External'} Consolidated</div>
+          <div className="page-sub">{season?.name} · {rows.length} entries · {fmt(total)}</div>
+        </div>
+        <button className={`BS ${isInt?'':'ext'}`} onClick={exportConsolidated}>⬇ Download Consolidated Excel</button>
+      </div>
+      <div className="card">
+        <div className="tbl-wrap">
+          {loading?<div style={{padding:20,textAlign:'center',color:'var(--muted)'}}>Loading…</div>:
+          rows.length===0?<div style={{padding:20,textAlign:'center',color:'var(--muted)'}}>No data.</div>:
+          <table>
+            <thead><tr>
+              <th>#</th><th>Name</th><th>Dept</th>
+              {!isInt&&<th>Claim</th>}
+              <th>Account No</th><th>IFSC</th><th>Bank</th><th>Branch</th>
+              {!isInt&&<th>College</th>}
+              <th>Mobile</th><th>Amount</th>
+            </tr></thead>
+            <tbody>{rows.map((r,i)=>(
+              <tr key={r.id}>
+                <td>{i+1}</td>
+                <td style={{fontWeight:600}}>{r.name}</td>
+                <td>{r.dept||'-'}</td>
+                {!isInt&&<td>{r.claim_desc||'-'}</td>}
+                <td className="mono">{r.account_no||'-'}</td>
+                <td className="mono">{r.ifsc||'-'}</td>
+                <td>{r.bank_name||'-'}</td>
+                <td>{r.branch||'-'}</td>
+                {!isInt&&<td>{r.college||'-'}</td>}
+                <td className="mono">{r.mobile||'-'}</td>
+                <td style={{fontWeight:700}}>{fmt(r.amount)}</td>
+              </tr>
+            ))}</tbody>
+            <tfoot><tr><td colSpan={isInt?9:11} style={{fontWeight:700,textAlign:'right'}}>TOTAL</td><td style={{fontWeight:700,color:isInt?'var(--int)':'var(--ext)'}}>{fmt(total)}</td></tr></tfoot>
+          </table>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── STAFF DIRECTORY ──────────────────────────────────────────
+function StaffDirectory({season,toast}){
+  const [query,setQuery]=useState('');
+  const [filter,setFilter]=useState('all');
+  const [results,setResults]=useState([]);
+  const [loading,setLoading]=useState(false);
+  const [profile,setProfile]=useState(null);
+
+  async function search(){
+    setLoading(true);
+    let q=supabase.from('claims').select('*').eq('season_id',season.id);
+    if(query)q=q.ilike('name',`%${query}%`);
+    if(filter==='int')q=q.in('work_type_id',INT_WORKS.map(w=>w.id));
+    if(filter==='ext')q=q.in('work_type_id',EXT_WORKS.map(w=>w.id));
+    const {data}=await q.order('name');
+    if(data){
+      const byName={};
+      data.forEach(r=>{
+        if(!byName[r.name])byName[r.name]={...r,works:[]};
+        byName[r.name].works.push(r);
+      });
+      setResults(Object.values(byName));
+    }
+    setLoading(false);
+  }
+
+  useEffect(()=>{if(season)search();},[season,query,filter]);
+
+  return (
+    <div>
+      <div className="page-header"><div className="page-title">Staff Directory</div><div className="page-sub">{season?.name}</div></div>
+      <div className="card" style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+        <input className="form-input" style={{flex:2,minWidth:200}} placeholder="🔍 Search by name…" value={query} onChange={e=>setQuery(e.target.value)}/>
+        <select className="form-select" value={filter} onChange={e=>setFilter(e.target.value)}>
+          <option value="all">All Staff</option>
+          <option value="int">Internal Only</option>
+          <option value="ext">External Only</option>
+        </select>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:profile?'1fr 380px':'1fr',gap:16}}>
+        <div className="card">
+          {loading?<div style={{padding:20,textAlign:'center',color:'var(--muted)'}}>Loading…</div>:
+          results.length===0?<div style={{padding:20,textAlign:'center',color:'var(--muted)'}}>No staff found.</div>:
+          <table>
+            <thead><tr><th>Name</th><th>Designation</th><th>Dept/College</th><th>Works Done</th><th>Total Claim</th></tr></thead>
+            <tbody>{results.map((s,i)=>{
+              const total=s.works.reduce((x,w)=>x+Number(w.amount||0),0);
+              const hasInt=s.works.some(w=>INT_WORKS.some(iw=>iw.id===w.work_type_id));
+              return <tr key={i} style={{cursor:'pointer'}} onClick={()=>setProfile(s)}>
+                <td style={{fontWeight:600}}>{s.name}</td>
+                <td>{s.designation||'-'}</td>
+                <td>{s.dept||s.college||'-'}</td>
+                <td><span className={`badge badge-${hasInt?'int':'ext'}`}>{s.works.length} work{s.works.length!==1?'s':''}</span></td>
+                <td style={{fontWeight:700}}>{fmt(total)}</td>
+              </tr>;
+            })}</tbody>
+          </table>}
+        </div>
+        {profile&&(
+          <div className="card" style={{position:'sticky',top:20}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+              <div style={{fontWeight:700,fontSize:15}}>{profile.name}</div>
+              <button className="BE" onClick={()=>setProfile(null)}>✕</button>
+            </div>
+            <div style={{fontSize:12,color:'var(--muted)',marginBottom:10}}>{profile.designation||''} {profile.dept||profile.college?`· ${profile.dept||profile.college}`:''}</div>
+            <div style={{display:'grid',gap:'6px',marginBottom:14}}>
+              <div style={{fontSize:12}}><span style={{color:'var(--muted)'}}>Account:</span> <span className="mono">{profile.account_no||'—'}</span></div>
+              <div style={{fontSize:12}}><span style={{color:'var(--muted)'}}>IFSC:</span> <span className="mono">{profile.ifsc||'—'}</span></div>
+              <div style={{fontSize:12}}><span style={{color:'var(--muted)'}}>Bank:</span> {profile.bank_name||'—'} / {profile.branch||'—'}</div>
+              <div style={{fontSize:12}}><span style={{color:'var(--muted)'}}>Mobile:</span> {profile.mobile||'—'}</div>
+            </div>
+            <div style={{fontWeight:700,fontSize:13,marginBottom:8}}>Works This Season</div>
+            {profile.works.map((w,i)=>{
+              const wt=ALL_WORKS.find(x=>x.id===w.work_type_id);
+              const isInt=INT_WORKS.some(x=>x.id===w.work_type_id);
+              return <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'7px 10px',background:'var(--bg)',borderRadius:7,marginBottom:5}}>
+                <span className={`badge badge-${isInt?'int':'ext'}`}>{wt?.short||w.work_type_id}</span>
+                <span style={{fontWeight:700}}>{fmt(w.amount)}</span>
+              </div>;
+            })}
+            <div style={{marginTop:10,borderTop:'1px solid var(--border)',paddingTop:10,fontWeight:700,display:'flex',justifyContent:'space-between'}}>
+              <span>Total Claim</span>
+              <span style={{color:'var(--gold)'}}>{fmt(profile.works.reduce((s,w)=>s+Number(w.amount||0),0))}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── MAIN APP ─────────────────────────────────────────────────
+function App(){
+  const [authed,setAuthed]=useState(false);
+  const [loginUser,setLoginUser]=useState('');
+  const [loginPass,setLoginPass]=useState('');
+  const [loginErr,setLoginErr]=useState('');
+  const [page,setPage]=useState('dashboard');
+  const [seasons,setSeasons]=useState([]);
+  const [season,setSeason]=useState(null);
+  const toast=useToast();
+
+  useEffect(()=>{loadSeasons();},[]);
+  async function loadSeasons(){
+    const {data}=await supabase.from('exam_seasons').select('*').order('id');
+    if(data&&data.length){setSeasons(data);setSeason(data[data.length-1]);}
+  }
+
+  function login(){
+    if(loginUser==='coe_admin'&&loginPass==='epmce@2025'){setAuthed(true);setLoginErr('');}
+    else setLoginErr('Invalid username or password.');
+  }
+
+  if(!authed) return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div className="login-logo">COE Claims</div>
+        <div className="login-sub">Er. Perumal Manimekalai College of Engineering</div>
+        <label className="login-label">Username</label>
+        <input className="login-input" value={loginUser} onChange={e=>setLoginUser(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()}/>
+        <label className="login-label" style={{marginTop:14}}>Password</label>
+        <input className="login-input" type="password" value={loginPass} onChange={e=>setLoginPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&login()}/>
+        <button className="login-btn" onClick={login}>Sign In</button>
+        {loginErr&&<div className="login-err">{loginErr}</div>}
+      </div>
+    </div>
+  );
+
+  const currentWt=ALL_WORKS.find(w=>w.id===page);
+
+  return (
+    <div className="layout">
+      <Toasts toasts={toast.toasts}/>
+      <div className="sidebar">
+        <div className="sidebar-header">
+          <div className="sidebar-title">COE Claims</div>
+          <div className="sidebar-sub">EPMCE — Controller of Examinations</div>
+        </div>
+        <div className="season-box">
+          <span className="season-label">📅 Exam Season</span>
+          <select className="season-select" value={season?.id||''} onChange={e=>{const s=seasons.find(x=>x.id===e.target.value);if(s)setSeason(s);}}>
+            {seasons.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+        <div className="nav-group">
+          <div className="nav-group-title">Overview</div>
+          <div className={`nav-item ${page==='dashboard'?'active-gold':''}`} onClick={()=>setPage('dashboard')}><span className="nav-dot dot-gold"/>Dashboard</div>
+          <div className={`nav-item ${page==='staff'?'active-int':''}`} onClick={()=>setPage('staff')}><span className="nav-dot dot-int"/>Staff Directory</div>
+        </div>
+        <div className="nav-group">
+          <div className="nav-group-title">Internal Staff Works</div>
+          {INT_WORKS.map(w=>(
+            <div key={w.id} className={`nav-item ${page===w.id?'active-int':''}`} onClick={()=>setPage(w.id)}>
+              <span className="nav-dot dot-int"/>{w.label}
+            </div>
+          ))}
+        </div>
+        <div className="nav-group">
+          <div className="nav-group-title">External Staff Works</div>
+          {EXT_WORKS.map(w=>(
+            <div key={w.id} className={`nav-item ${page===w.id?'active-ext':''}`} onClick={()=>setPage(w.id)}>
+              <span className="nav-dot dot-ext"/>{w.label}
+            </div>
+          ))}
+        </div>
+        <div className="nav-group">
+          <div className="nav-group-title">Consolidated</div>
+          <div className={`nav-item ${page==='consol-int'?'active-int':''}`} onClick={()=>setPage('consol-int')}><span className="nav-dot dot-int"/>Internal Consolidated</div>
+          <div className={`nav-item ${page==='consol-ext'?'active-ext':''}`} onClick={()=>setPage('consol-ext')}><span className="nav-dot dot-ext"/>External Consolidated</div>
+        </div>
+        <button className="signout-btn" onClick={()=>{setAuthed(false);setLoginUser('');setLoginPass('');}}>⎋ Sign Out</button>
+      </div>
+      <div className="main">
+        {!season&&<div style={{padding:40,textAlign:'center',color:'var(--muted)'}}>Loading seasons…</div>}
+        {season&&page==='dashboard'&&<Dashboard season={season} toast={toast}/>}
+        {season&&page==='staff'&&<StaffDirectory season={season} toast={toast}/>}
+        {season&&page==='consol-int'&&<Consolidated type="int" season={season} toast={toast}/>}
+        {season&&page==='consol-ext'&&<Consolidated type="ext" season={season} toast={toast}/>}
+        {season&&currentWt&&<WorkScreen wt={currentWt} season={season} toast={toast}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
