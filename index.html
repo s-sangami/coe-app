@@ -626,6 +626,8 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
   },[]);
   
   // Custom departments (loaded from Supabase + merged with default DEPTS)
+  const [staffSearch,setStaffSearch]=useState('');
+  const [staffDropOpen,setStaffDropOpen]=useState(false);
   const [customDepts,setCustomDepts]=useState([]);
   const [showAddDept,setShowAddDept]=useState(false);
   const [newDeptInput,setNewDeptInput]=useState('');
@@ -1056,14 +1058,38 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
       <div className="card">
         <div style={{fontWeight:700,marginBottom:14,fontSize:14}}>{editing?'✏️ Edit Entry':'➕ Add Entry'}</div>
         {staffList.length>0&&<div className="form-grid" style={{marginBottom:10}}>
-          <div className="form-group" style={{gridColumn:'1/-1'}}>
+          <div className="form-group" style={{gridColumn:'1/-1',position:'relative'}}>
             <label className="form-label">⚡ Quick-fill from Staff Directory</label>
-            <select className="form-select" value="" onChange={e=>selectFromStaff(e.target.value)}>
-              <option value="">— Select an existing staff member to auto-fill —</option>
-              {staffList.filter(s=>isInt?(!s.staff_type||s.staff_type==='INT'):(s.staff_type==='EXT')).map(s=>
-                <option key={s.id} value={s.id}>{s.name}{s.designation?` · ${s.designation}`:''}{s.dept?` · ${s.dept}`:''}</option>
-              )}
-            </select>
+            <input
+              className="form-input"
+              placeholder="🔍 Type a staff name to search…"
+              value={staffSearch}
+              onChange={e=>{setStaffSearch(e.target.value);setStaffDropOpen(true);}}
+              onFocus={()=>setStaffDropOpen(true)}
+            />
+            {staffDropOpen&&staffSearch.trim()&&(()=>{
+              const pool=staffList.filter(s=>isInt?(!s.staff_type||s.staff_type==='INT'):(s.staff_type==='EXT'));
+              const q=staffSearch.trim().toLowerCase();
+              const matches=pool.filter(s=>(s.name||'').toLowerCase().includes(q)).slice(0,15);
+              return (
+                <div style={{position:'absolute',top:'100%',left:0,right:0,zIndex:50,background:'#fff',border:'1px solid var(--border)',borderRadius:8,marginTop:2,maxHeight:280,overflowY:'auto',boxShadow:'0 6px 18px rgba(0,0,0,0.12)'}}>
+                  {matches.length===0?(
+                    <div style={{padding:'10px 12px',fontSize:13,color:'var(--muted)'}}>No staff found matching "{staffSearch}"</div>
+                  ):matches.map(s=>(
+                    <div key={s.id}
+                      onClick={()=>{selectFromStaff(s.id);setStaffSearch('');setStaffDropOpen(false);}}
+                      style={{padding:'9px 12px',fontSize:13,cursor:'pointer',borderBottom:'1px solid #f1f5f9'}}
+                      onMouseEnter={e=>e.currentTarget.style.background='#f8fafc'}
+                      onMouseLeave={e=>e.currentTarget.style.background='#fff'}
+                    >
+                      <span style={{fontWeight:600}}>{s.name}</span>
+                      <span style={{color:'var(--muted)'}}>{s.designation?` · ${s.designation}`:''}{s.dept?` · ${s.dept}`:''}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+            {staffDropOpen&&<div onClick={()=>setStaffDropOpen(false)} style={{position:'fixed',inset:0,zIndex:40}}/>}
           </div>
         </div>}
         <div className="form-grid">
