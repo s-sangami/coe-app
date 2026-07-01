@@ -352,8 +352,8 @@ function buildWorkSheet(wt,claims,season){
   // DO NOT rename — the import parser reads these exact strings.
   const baseHeaders=['S.No','name','designation','dept','college','mobile_no','ac_no','ifsc_code','bank','branch','subject_code','board_name','claim_desc','amount'];
   const dateHeaders=isExtDuty
-    ? ['date','session','ehs_rem','ehs_lump','ihs_rem','rhs_rem']
-    : ['date','session','no_sessions'];
+    ? ['date','session','ehs_rem','ehs_lump','ihs_rem','rhs_rem','row_amount']
+    : ['date','session','row_amount'];
   const headers=isDateBased?[...baseHeaders,...dateHeaders]:baseHeaders;
   rows.push(headers);
 
@@ -381,9 +381,9 @@ function buildWorkSheet(wt,claims,season){
           d.session||'',
         ];
         if(isExtDuty){
-          row.push(d.ehs_rem||0, d.ehs_lump||0, d.ihs_rem||0, d.rhs_rem||0);
+          row.push(d.ehs_rem||0, d.ehs_lump||0, d.ihs_rem||0, d.rhs_rem||0, d.row_amount||0);
         } else {
-          row.push(d.no_sessions||0);
+          row.push(d.row_amount||0);
         }
         rows.push(row);
       });
@@ -395,7 +395,7 @@ function buildWorkSheet(wt,claims,season){
       ];
       if(isDateBased){
         // Empty date fields for entries without date rows
-        if(isExtDuty) row.push('','', 0, 0, 0, 0);
+        if(isExtDuty) row.push('','', 0, 0, 0, 0, 0);
         else row.push('','', 0);
       }
       rows.push(row);
@@ -560,6 +560,7 @@ function parseSheetToRows(ws, workTypeId){
     date:         get(r,'date'),
     session:      get(r,'session') || 'FN',
     no_sessions:  getN(r,'no_sessions') || 1,
+    row_amount:   getN(r,'row_amount'),
     ehs_rem:      getN(r,'ehs_rem'),
     ehs_lump:     getN(r,'ehs_lump'),
     ihs_rem:      getN(r,'ihs_rem'),
