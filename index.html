@@ -352,15 +352,15 @@ function buildWorkSheet(wt,claims,season){
   // DO NOT rename — the import parser reads these exact strings.
   const baseHeaders=['S.No','name','designation','dept','college','mobile_no','ac_no','ifsc_code','bank','branch','subject_code','board_name','claim_desc','amount'];
   const dateHeaders=isExtDuty
-    ? ['date','session','ehs_rem','ehs_lump','ihs_rem','rhs_rem','row_amount']
-    : ['date','session','row_amount'];
+    ? ['date','session','ehs_rem','ehs_lump','ihs_rem','rhs_rem']
+    : ['date','session'];
   const headers=isDateBased?[...baseHeaders,...dateHeaders]:baseHeaders;
   rows.push(headers);
 
   // Data rows
   claims.forEach((c,i)=>{
     if(isDateBased && c.claim_date_rows && c.claim_date_rows.length){
-      // One row per date entry
+      // One row per date entry — amount column holds each date's amount
       c.claim_date_rows.forEach((d,di)=>{
         const row=[
           di===0?i+1:'',
@@ -376,17 +376,21 @@ function buildWorkSheet(wt,claims,season){
           di===0?fmtSubjects(c.subject_code,c.subject_name):'',
           di===0?c.board_name||'':'',
           di===0?c.claim_desc||'':'',
-          di===0?(c.amount||0):'',
+          d.row_amount||0,   // amount column = this date's amount
           d.date||'',
           d.session||'',
         ];
         if(isExtDuty){
-          row.push(d.ehs_rem||0, d.ehs_lump||0, d.ihs_rem||0, d.rhs_rem||0, d.row_amount||0);
-        } else {
-          row.push(d.row_amount||0);
+          row.push(d.ehs_rem||0, d.ehs_lump||0, d.ihs_rem||0, d.rhs_rem||0);
         }
         rows.push(row);
       });
+      // Per-person TOTAL row right after their date rows
+      const personTotal=c.claim_date_rows.reduce((s,d)=>s+Number(d.row_amount||0),0);
+      const totRow=new Array(headers.length).fill('');
+      totRow[12]='TOTAL';      // under claim_desc
+      totRow[13]=personTotal;  // amount column
+      rows.push(totRow);
     } else {
       const row=[
         i+1, c.name, c.designation||'', c.dept||'', c.college||'',
@@ -395,8 +399,8 @@ function buildWorkSheet(wt,claims,season){
       ];
       if(isDateBased){
         // Empty date fields for entries without date rows
-        if(isExtDuty) row.push('','', 0, 0, 0, 0, 0);
-        else row.push('','', 0);
+        if(isExtDuty) row.push('','', 0, 0, 0, 0);
+        else row.push('','');
       }
       rows.push(row);
     }
@@ -560,7 +564,7 @@ function parseSheetToRows(ws, workTypeId){
     date:         get(r,'date'),
     session:      get(r,'session') || 'FN',
     no_sessions:  getN(r,'no_sessions') || 1,
-    row_amount:   getN(r,'row_amount'),
+    row_amount:   getN(r,'row_amount') || getN(r,'amount'),
     ehs_rem:      getN(r,'ehs_rem'),
     ehs_lump:     getN(r,'ehs_lump'),
     ihs_rem:      getN(r,'ihs_rem'),
