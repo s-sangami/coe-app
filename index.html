@@ -170,6 +170,7 @@ const INT_WORKS = [
   {id:'CS',label:'Chief Superintendent',short:'CS'},
   {id:'RHS',label:'Reserve Hall Superintendent',short:'RHS'},
   {id:'SQUAD',label:'Squad Duty',short:'SQUAD'},
+  {id:'DUMMY_NO',label:'Dummy Number',short:'DUMMY NO'},
   {id:'INT_DUTY',label:'Internal Hall Duty',short:'INT DUTY'},
   {id:'PRACT_INT',label:'Practical — Internal Examiner',short:'PRACT INT'},
   {id:'PRAC_SKILL',label:'Practical — Skilled Examiner',short:'PRAC SKILL'},
@@ -194,7 +195,7 @@ const EXT_WORKS = [
 ];
 const ALL_WORKS = [...INT_WORKS,...EXT_WORKS];
 const DEPTS = ['S/H (English)','S/H (Tamil)','S/H (Maths)','S/H (Physics)','S/H (Chemistry)','AERO','EEE','ECE','CSE','IT','AIML','AIDS','MCA','MCO','MBA','CHEM','CIVIL','CSBS','MECH'];
-const DATE_BASED = ['CS','RHS','SQUAD','INT_DUTY','PRACT_INT','PRAC_SKILL','PRAC_EXT','EXT_DUTY'];
+const DATE_BASED = ['CS','RHS','SQUAD','DUMMY_NO','INT_DUTY','PRACT_INT','PRAC_SKILL','PRAC_EXT','EXT_DUTY'];
 
 // Sheet name → work type ID mapping (for Excel import)
 const SHEET_TO_WORK = {
@@ -336,7 +337,7 @@ async function logAction(table, recordId, action, oldData, newData){
 
 // ── EXCEL SHEET BUILDERS — matches MODEL_CLAIM format ───────────
 function buildWorkSheet(wt,claims,season){
-  const isDateBased=['CS','RHS','SQUAD','INT_DUTY','PRACT_INT','PRAC_SKILL','PRAC_EXT','EXT_DUTY'].includes(wt.id);
+  const isDateBased=['CS','RHS','SQUAD','DUMMY_NO','INT_DUTY','PRACT_INT','PRAC_SKILL','PRAC_EXT','EXT_DUTY'].includes(wt.id);
   const isExtDuty=wt.id==='EXT_DUTY';
 
   const rows=[];
@@ -574,7 +575,7 @@ function parseSheetToRows(ws, workTypeId){
 
 // ─── EMPTY CLAIM ─────────────────────────────────────────────
 function emptyClaim(workTypeId,seasonId){
-  const isInt=['CS','RHS','SQUAD','INT_DUTY','PRACT_INT','PRAC_SKILL','QP_INT','QP_ANS','SCRUT_INT','VAL_PH1_CHIEF','VAL_PH2_CHIEF','VAL_PH1_INT','VAL_PH2_INT','TABULATOR','DATA_ENTRY'].includes(workTypeId);
+  const isInt=['CS','RHS','SQUAD','DUMMY_NO','INT_DUTY','PRACT_INT','PRAC_SKILL','QP_INT','QP_ANS','SCRUT_INT','VAL_PH1_CHIEF','VAL_PH2_CHIEF','VAL_PH1_INT','VAL_PH2_INT','TABULATOR','DATA_ENTRY'].includes(workTypeId);
   return {
     work_type_id:workTypeId,season_id:seasonId,
     name:'',designation:'',dept:'',
@@ -798,7 +799,7 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
       rows[i]={...rows[i],[k]:val};
       if(isExtDuty) rows[i]=calcExtDutyRow(rows[i]);
       // For simple date types: amount = sum of row_total (user enters per row)
-      const isSimpleDateType=['CS','RHS','SQUAD','INT_DUTY','PRACT_INT','PRAC_SKILL','PRAC_EXT'].includes(wt.id);
+      const isSimpleDateType=['CS','RHS','SQUAD','DUMMY_NO','INT_DUTY','PRACT_INT','PRAC_SKILL','PRAC_EXT'].includes(wt.id);
       if(isSimpleDateType){
         const total=rows.reduce((s,r)=>s+Number(r.row_total||0),0);
         return {...f,date_rows:rows,amount:total};
@@ -1258,7 +1259,7 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
             <div className="tbl-wrap">
               <table className="date-rows-table">
                 {/* Simple table: Date | Session | Amount — for CS/RHS/SQUAD/INT_DUTY/PRACT_INT/PRAC_SKILL/PRAC_EXT */}
-                {['CS','RHS','SQUAD','INT_DUTY','PRACT_INT','PRAC_SKILL','PRAC_EXT'].includes(wt.id)?(
+                {['CS','RHS','SQUAD','DUMMY_NO','INT_DUTY','PRACT_INT','PRAC_SKILL','PRAC_EXT'].includes(wt.id)?(
                   <>
                   <thead><tr><th>Date</th><th>Session</th><th>Amount (₹)</th><th></th></tr></thead>
                   <tbody>{form.date_rows.map((r,i)=>(
@@ -1674,7 +1675,7 @@ function ImportModal({season,toast,onClose}){
         
         // Auto-add/update staff directory with bank details
         if(row.name && row.name.trim()){
-          const INT_WORKS_LOCAL=['CS','RHS','SQUAD','INT_DUTY','PRACT_INT','PRAC_SKILL','QP_INT','QP_ANS','SCRUT_INT','VAL_PH1_CHIEF','VAL_PH2_CHIEF','VAL_PH1_INT','VAL_PH2_INT','TABULATOR','DATA_ENTRY'];
+          const INT_WORKS_LOCAL=['CS','RHS','SQUAD','DUMMY_NO','INT_DUTY','PRACT_INT','PRAC_SKILL','QP_INT','QP_ANS','SCRUT_INT','VAL_PH1_CHIEF','VAL_PH2_CHIEF','VAL_PH1_INT','VAL_PH2_INT','TABULATOR','DATA_ENTRY'];
           const stype=INT_WORKS_LOCAL.includes(s.workTypeId)?'INT':'EXT';
           const {data:existingStaff}=await supabase.from('staff').select('*').eq('name',row.name.trim()).eq('staff_type',stype).maybeSingle();
           if(!existingStaff){
