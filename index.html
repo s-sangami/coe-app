@@ -891,14 +891,12 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
     if(editing){
       const {error}=await supabase.from('claims').update(payload).eq('id',editing);
       if(error){toast.show(safeError(error,'Update failed. Please try again.'),'error');setLoading(false);return;}
-      logAction('claims',editing,'UPDATE',null,{name:payload.name,work_type_id:payload.work_type_id,amount:payload.amount,season_id:payload.season_id});
     } else {
       // Generate UUID for new entries (claims.id has no DB default)
       const newId=uuid();
       const {data,error}=await supabase.from('claims').insert([{id:newId,...payload}]).select().single();
       if(error){toast.show(safeError(error,'Save failed. Please try again.'),'error');setLoading(false);return;}
       claimId=data.id;
-      logAction('claims',claimId,'INSERT',null,{name:payload.name,work_type_id:payload.work_type_id,amount:payload.amount,season_id:payload.season_id});
     }
     if(isDateBased && claimId){
       await supabase.from('claim_date_rows').delete().eq('claim_id',claimId);
@@ -957,10 +955,8 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
 
   async function del(id){
     if(!confirm('Delete this entry?'))return;
-    const {data:oldData}=await supabase.from('claims').select('name,work_type_id,amount,season_id').eq('id',id).maybeSingle();
     await supabase.from('claim_date_rows').delete().eq('claim_id',id);
     await supabase.from('claims').delete().eq('id',id);
-    logAction('claims',id,'DELETE',oldData,null);
     toast.show('Deleted','info');load();
   }
 
@@ -2615,7 +2611,6 @@ function Approvals({season,toast,onApprove,onOpenWork}){
   async function approve(c){
     const {error}=await supabase.from('claims').update({status:'verified'}).eq('id',c.id);
     if(error){toast.show(safeError(error,'Operation failed. Please try again.'),'error');return;}
-    logAction('claims',c.id,'UPDATE',{status:'draft'},{status:'verified',source:'portal_approval',name:c.name});
     toast.show('Approved — opening work screen to complete details','success');
     loadPending();onApprove();
     onOpenWork&&onOpenWork(c.work_type_id,c.id);
