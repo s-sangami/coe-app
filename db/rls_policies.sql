@@ -105,6 +105,21 @@ alter table public.app_settings    enable row level security;
 alter table public.audit_log       enable row level security;
 
 
+-- Remove every pre-existing policy on the COE tables so only the ones below remain.
+do $$
+declare r record;
+begin
+  for r in
+    select policyname, tablename from pg_policies
+    where schemaname = 'public'
+      and tablename in ('claims','claim_date_rows','staff','exam_seasons',
+                        'portal_access','app_settings','audit_log')
+  loop
+    execute format('drop policy if exists %I on public.%I', r.policyname, r.tablename);
+  end loop;
+end $$;
+
+
 -- ---------------------------------------------------------------------
 -- 4. anon (portal) policies
 -- ---------------------------------------------------------------------
