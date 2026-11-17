@@ -63,6 +63,8 @@ Use a **new, empty** Supabase project, or review the SQL against your existing o
 
 All the SQL files are written to be re-run safely, except `schema.sql`, which will not change tables that already exist.
 
+`db/rollback_test.sql` is a dry run: it applies the policy and trigger files, runs the tests, and ends with an error so everything is rolled back. It contains copies of `rls_policies.sql` and `audit_triggers.sql`, so regenerate it whenever those change.
+
 ## Security notes
 
 - **The portal's `?t=` token is client-side only.** It is just base64 of `SEASONID_EXPIRYMS`. It is not signed and not secret. The portal checks it in the visitor's browser to decide whether to show the form. Anyone can decode it, edit the expiry, forge a link for any season, or skip the portal and call the Supabase API directly with the publishable key. It is a convenience for honest users, not a security control.
