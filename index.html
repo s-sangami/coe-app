@@ -2575,7 +2575,7 @@ function Approvals({season,toast,onApprove,onOpenWork}){
   const expiresAt=access?.expires_at?new Date(access.expires_at):null;
   const timeLeft=expiresAt?Math.max(0,Math.round((expiresAt-now)/60000)):0; // minutes left
 
-  function generateLink(){
+  async function generateLink(){
     if(!portalUrl){
       toast.show('Please set Portal URL first','error');
       setShowUrlSetting(true);
@@ -2584,6 +2584,18 @@ function Approvals({season,toast,onApprove,onOpenWork}){
     }
     const mins=duration.unit==='hours'?duration.value*60:duration.unit==='days'?duration.value*1440:duration.value;
     const expiry=Date.now()+(mins*60000);
+    // Record the opening in the database. The RLS policy only accepts portal
+    // submissions while an active, unexpired portal_access row exists for the season.
+    // Close any earlier rows first so the new expiry is the only one in force.
+    const {error:closeErr}=await supabase.from('portal_access').update({is_active:false}).eq('season_id',season.id).eq('is_active',true);
+    if(closeErr){toast.show(safeError(closeErr,'Could not open the portal. Please try again.'),'error');return;}
+    const {error:accessErr}=await supabase.from('portal_access').insert([{
+      season_id:season.id,
+      expires_at:new Date(expiry).toISOString(),
+      is_active:true,
+    }]);
+    if(accessErr){toast.show(safeError(accessErr,'Could not open the portal. Please try again.'),'error');return;}
+    await loadAccess();
     const raw=btoa(season.id+'_'+expiry).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
     // Use the hosted portal URL (configured once by COE)
     const base=portalUrl.replace(/\/$/,'');
