@@ -14,6 +14,8 @@
 --            unexpired portal_access row exists for the claim's season,
 --            and only as status='draft', entry_source='portal', amount=0.
 --            SELECT exam_seasons (the portal reads its season name; see Questions).
+-- exam_schedule is not covered here (table not deployed). Its policies are in
+-- db/optional_exam_schedule.sql.
 -- anon can NOT: select/update/delete anything else.
 -- =====================================================================
 
@@ -72,7 +74,7 @@ grant execute on function public.portal_claim_accepts_rows(text) to anon, authen
 -- only guard. Remove them so a missing policy cannot open a table.
 -- ---------------------------------------------------------------------
 revoke all on public.claims, public.claim_date_rows, public.staff, public.exam_seasons,
-              public.exam_schedule, public.portal_access, public.app_settings,
+              public.portal_access, public.app_settings,
               public.audit_log
   from anon;
 
@@ -84,7 +86,7 @@ grant usage on all sequences in schema public to anon;
 
 grant select, insert, update, delete on
   public.claims, public.claim_date_rows, public.staff, public.exam_seasons,
-  public.exam_schedule, public.portal_access, public.app_settings
+  public.portal_access, public.app_settings
   to authenticated;
 -- audit_log: append and read only, no edit or delete from the browser.
 grant select, insert on public.audit_log to authenticated;
@@ -98,7 +100,6 @@ alter table public.claims          enable row level security;
 alter table public.claim_date_rows enable row level security;
 alter table public.staff           enable row level security;
 alter table public.exam_seasons    enable row level security;
-alter table public.exam_schedule   enable row level security;
 alter table public.portal_access   enable row level security;
 alter table public.app_settings    enable row level security;
 alter table public.audit_log       enable row level security;
@@ -146,7 +147,7 @@ do $$
 declare t text;
 begin
   foreach t in array array['claims','claim_date_rows','staff','exam_seasons',
-                           'exam_schedule','portal_access','app_settings']
+                           'portal_access','app_settings']
   loop
     execute format('drop policy if exists admin_all on public.%I', t);
     execute format(
