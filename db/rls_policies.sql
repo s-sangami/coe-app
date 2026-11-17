@@ -12,7 +12,7 @@
 --
 -- anon can:  INSERT claims, INSERT claim_date_rows, only while an active,
 --            unexpired portal_access row exists for the claim's season,
---            and only as status='draft', entry_source='portal'.
+--            and only as status='draft', entry_source='portal', amount=0.
 --            SELECT exam_seasons (the portal reads its season name; see Questions).
 -- anon can NOT: select/update/delete anything else.
 -- =====================================================================
@@ -41,7 +41,9 @@ as $$
 $$;
 
 -- A date row may be attached only to a portal draft whose season is still open.
-create or replace function public.portal_claim_accepts_rows(p_claim_id uuid)
+-- claims.id is text in the live database (not uuid).
+drop function if exists public.portal_claim_accepts_rows(uuid);
+create or replace function public.portal_claim_accepts_rows(p_claim_id text)
 returns boolean
 language sql
 stable
@@ -59,9 +61,9 @@ as $$
 $$;
 
 revoke all on function public.portal_season_is_open(text)     from public;
-revoke all on function public.portal_claim_accepts_rows(uuid) from public;
+revoke all on function public.portal_claim_accepts_rows(text) from public;
 grant execute on function public.portal_season_is_open(text)     to anon, authenticated;
-grant execute on function public.portal_claim_accepts_rows(uuid) to anon, authenticated;
+grant execute on function public.portal_claim_accepts_rows(text) to anon, authenticated;
 
 
 -- ---------------------------------------------------------------------
@@ -113,6 +115,7 @@ create policy portal_insert_claims
   with check (
         status       = 'draft'
     and entry_source = 'portal'
+    and amount       = 0       -- the portal always sends 0; the admin sets amounts on approval
     and public.portal_season_is_open(season_id)
   );
 
