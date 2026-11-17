@@ -38,7 +38,7 @@ create table if not exists public.exam_seasons (
 -- Code: select/insert/update/delete; unique-ish on (name, staff_type).
 -- ---------------------------------------------------------------------
 create table if not exists public.staff (
-  id           uuid primary key,               -- client-generated (uuid() in the app); GUESS: no DB default, so none is set
+  id           text primary key,               -- GUESS: text. claims.id is text live and claims.staff_id is text; app sends uuid strings, no DB default
   name         text not null,
   staff_type   text not null
                check (staff_type in ('INT','EXT')),  -- values seen in code: 'INT' / 'EXT'. GUESS: the CHECK itself
@@ -64,31 +64,35 @@ create index if not exists staff_name_type_idx on public.staff (name, staff_type
 -- entry_source='portal'.
 -- ---------------------------------------------------------------------
 create table if not exists public.claims (
-  id            uuid primary key,              -- app comment says "claims.id has no DB default", so none here. Portal sends crypto.randomUUID()
+  -- Column list below matches the LIVE database (information_schema output supplied by
+  -- the owner). Foreign keys, indexes and the sequence of columns are still not verified.
+  id            text primary key,              -- LIVE: text, no default. App/portal send crypto.randomUUID() strings. (Earlier draft wrongly said uuid)
   season_id     text not null
-                references public.exam_seasons(id),  -- GUESS: the FK. Code deletes claims before seasons, which is compatible with it
-  work_type_id  text not null,                 -- GUESS: text codes such as 'QP_EXT','CS','EXT_DUTY' (list lives in app code, no lookup table seen)
-  name          text not null,
-  designation   text,
-  dept          text,
-  college       text,
-  college_code  text,
-  mobile_no     text,
-  ac_no         text,
-  ifsc_code     text,
-  bank          text,
-  branch        text,
-  amount        numeric(12,2) not null default 0,  -- GUESS: numeric(12,2). Code does Number(x)||0, so no NULLs are written. Portal always sends 0
-  claim_desc    text,                          -- free-text description (admin app only)
-  board_name    text,                          -- valuation board
-  subject_code  text,                          -- NOTE: may hold a JSON array string for multi-subject claims, e.g. '[{"code":"..","name":".."}]'
-  subject_name  text,
-  qty_sessions  integer,                       -- GUESS: integer. Read as c.qty_sessions||1, written from form.no_sessions
-  assigned_duty text,                          -- GUESS: sent by the portal only; the admin app never reads it
-  status        text,                          -- values seen: 'draft' (portal), 'verified' (after approval). Admin-created rows send NO status.
-                                               -- GUESS: no default and no CHECK, because admin rows would otherwise get an unknown value. See Questions in README
-  entry_source  text,                          -- 'portal' for portal rows; admin rows send nothing (NULL). GUESS: no default
-  created_at    timestamptz not null default now()  -- ordered/displayed by the app, never written by it, so the DB must default it
+                references public.exam_seasons(id),  -- GUESS: the FK itself (column is live)
+  work_type_id  text not null,                 -- codes such as 'QP_EXT','CS','EXT_DUTY'; list lives in app code
+  staff_id      text,                          -- LIVE, but not used by either app's code. GUESS: meaning (link to staff.id)
+  name          text not null default '',
+  dept          text default '',
+  college       text default '',
+  mobile_no     text default '',
+  ac_no         text default '',
+  ifsc_code     text default '',
+  bank          text default '',
+  branch        text default '',
+  amount        numeric not null default 0,
+  designation   text default '',
+  subject_code  text default '',               -- NOTE: may hold a JSON array string for multi-subject claims
+  subject_name  text default '',
+  board_name    text default '',
+  claim_desc    text default '',
+  assigned_duty text default '',
+  qty_sessions  numeric default 0,
+  rate          numeric default 0,             -- LIVE, but not used by either app's code
+  status        text default 'draft',          -- LIVE default 'draft', nullable. Values in code: 'draft', 'verified'. No CHECK (GUESS: none live)
+  entry_source  text default 'admin',          -- LIVE default 'admin'; portal sends 'portal'
+  created_at    timestamptz default now(),
+  updated_at    timestamptz default now(),     -- LIVE. GUESS: whether a trigger keeps it current (none is defined here)
+  college_code  text                           -- LIVE: no default, nullable
 );
 create index if not exists claims_season_work_idx   on public.claims (season_id, work_type_id);
 create index if not exists claims_portal_draft_idx  on public.claims (entry_source, status);  -- GUESS: index, for the pending-approvals query
@@ -100,7 +104,7 @@ create index if not exists claims_portal_draft_idx  on public.claims (entry_sour
 -- ---------------------------------------------------------------------
 create table if not exists public.claim_date_rows (
   id          bigint generated by default as identity primary key,  -- GUESS: the app never reads or writes a row id
-  claim_id    uuid not null
+  claim_id    text not null
               references public.claims(id),    -- an FK must exist: supabase-js embeds claim_date_rows(*) inside claims queries.
                                                -- GUESS: no ON DELETE CASCADE, because the app deletes children first by hand
   date        text not null default '',        -- GUESS: text. Both apps send '' when blank, which a date column would reject
@@ -111,10 +115,8 @@ create table if not exists public.claim_date_rows (
   ihs_rem     numeric(12,2) not null default 0,  -- internal hall supervisor remuneration
   rhs_rem     numeric(12,2) not null default 0,  -- reserve hall supervisor remuneration
   row_amount  numeric(12,2) not null default 0   -- this row's payable amount
-  -- NOT created, deliberately: the Excel bulk-import (coe-app index.html ~line 1721) inserts
-  -- qty_sessions, ehs_total and row_total here, but every other code path uses
-  -- no_sessions and row_amount, and ehs_total/row_total only exist client-side.
-  -- That import path therefore looks broken for date rows. See Questions in README.
+  -- No qty_sessions / ehs_total / row_total columns: those names were used only by the Excel
+  -- bulk importer, which has been changed to use no_sessions and row_amount.
 );
 create index if not exists claim_date_rows_claim_idx on public.claim_date_rows (claim_id);
 
@@ -126,17 +128,14 @@ create index if not exists claim_date_rows_claim_idx on public.claim_date_rows (
 create table if not exists public.exam_schedule (
   id           bigint generated by default as identity primary key,  -- GUESS: never referenced in code
   season_id    text not null
-               references public.exam_seasons(id),  -- GUESS: FK, see the NOTE below this table
+               references public.exam_seasons(id) on delete cascade,  -- GUESS: FK. ON DELETE CASCADE per owner decision, so deleting a season removes its schedule
   subject_code text not null,                  -- upper-cased by the import
   subject_name text,
   exam_date    date,                           -- GUESS: date. Import writes 'YYYY-MM-DD' or null
   session      text not null default ''        -- 'FN' / 'AN' or ''. Import writes '' when absent
 );
 create index if not exists exam_schedule_season_idx on public.exam_schedule (season_id);
--- NOTE for deleteSeason: the app deletes claims then the season, but NOT exam_schedule
--- (see ~line 2976). With the FK above, deleting a season that has a schedule uploaded
--- would fail. If you keep the FK, add "on delete cascade" here. Left as the safe
--- default (no cascade) so no data disappears silently. See Questions in README.
+-- claims and claim_date_rows deliberately have NO cascade (owner decision): the app deletes children by hand.
 
 
 -- ---------------------------------------------------------------------
