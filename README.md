@@ -40,13 +40,13 @@ It is a single file, `index.html` (React and Babel loaded in the browser, Supaba
 
 ## Data flow: portal submission, draft, admin approval
 
-1. **Open the portal.** An admin opens the Portal screen in coe-app, picks a duration and generates a link: `<portal URL>?t=<base64url(SEASONID_EXPIRYMS)>`. The admin sends this link to external staff.
+1. **Open the portal.** An admin opens the Portal screen in coe-app, picks a duration and generates a link: `<portal URL>?t=<base64url(SEASONID_EXPIRYMS)>`. Generating the link also inserts a `portal_access` row (`season_id`, `expires_at`, `is_active = true`) and closes any earlier active rows for that season. The admin sends the link to external staff.
 2. **Submit.** The staff member opens the link, fills in the 4-step form and submits. The portal inserts one `claims` row with `status = 'draft'` and `entry_source = 'portal'`, plus `claim_date_rows` for practical or hall-duty work. The portal is anonymous, so the database must accept this insert (see [`db/rls_policies.sql`](db/rls_policies.sql)).
 3. **Review.** The Portal screen in coe-app lists every claim where `entry_source = 'portal'` and `status = 'draft'`.
 4. **Approve or reject.**
    - *Approve* sets `status = 'verified'` and opens the claim on its work screen so the admin can complete the details (for example, the amount for hall duty and practicals, which the portal always submits as 0).
    - *Reject* deletes the claim and its date rows.
-5. **Audit.** Changes to `claims` and `claim_date_rows` are logged to `audit_log` by database triggers (see [`db/audit_triggers.sql`](db/audit_triggers.sql)).
+5. **Audit.** Changes to `claims` are logged to `audit_log` by a database trigger (staff and season changes are still logged by the browser) (see [`db/audit_triggers.sql`](db/audit_triggers.sql)).
 
 ## Database setup (from `db/`)
 
@@ -59,7 +59,7 @@ Use a **new, empty** Supabase project, or review the SQL against your existing o
    2. [`db/rls_policies.sql`](db/rls_policies.sql): enables Row Level Security, creates the portal and admin policies, and revokes default anon privileges.
    3. [`db/audit_triggers.sql`](db/audit_triggers.sql): audit triggers on `claims` and `claim_date_rows`.
 4. Put your project's URL and publishable (anon) key in the `SUPA_URL` / `SUPA_KEY` constants at the top of the script in both `index.html` files.
-5. **Open the portal** for a season. The RLS policy only accepts portal inserts while a row in `portal_access` has `is_active = true`, a future `expires_at`, and the right `season_id`. See the Questions section below: the current admin app does not create this row.
+5. **Open the portal** for a season from the Portal screen. The RLS policy only accepts portal inserts while a row in `portal_access` has `is_active = true`, a future `expires_at`, and the right `season_id`; "Generate Link" creates that row.
 
 All the SQL files are written to be re-run safely, except `schema.sql`, which will not change tables that already exist.
 
@@ -68,7 +68,7 @@ All the SQL files are written to be re-run safely, except `schema.sql`, which wi
 - **The portal's `?t=` token is client-side only.** It is just base64 of `SEASONID_EXPIRYMS`. It is not signed and not secret. The portal checks it in the visitor's browser to decide whether to show the form. Anyone can decode it, edit the expiry, forge a link for any season, or skip the portal and call the Supabase API directly with the publishable key. It is a convenience for honest users, not a security control.
 - **The real protection is the RLS policy** in [`db/rls_policies.sql`](db/rls_policies.sql). Even with a forged link or a direct API call, the database only lets anonymous callers `INSERT` a `claims` or `claim_date_rows` row when:
   - an active, unexpired `portal_access` row exists for that season,
-  - `status` is `'draft'` and `entry_source` is `'portal'`.
+  - `status` is `'draft'`, `entry_source` is `'portal'` and `amount` is `0`.
 
   Anonymous callers cannot select, update or delete claims, and cannot touch any other table. The only anon read is `exam_seasons`.
 - **Closing the portal means the database row.** Deactivating the portal in the admin app sets `portal_access.is_active = false`, and from that moment the database rejects anon inserts, whatever link the visitor holds. Shortening the link's expiry does not do that, because the link expiry is client-side only.
@@ -77,12 +77,9 @@ All the SQL files are written to be re-run safely, except `schema.sql`, which wi
 - **Every logged-in user is a full admin.** The policies give any `authenticated` user full access, and there is no role table. Disable public sign-ups and create admin accounts manually, or add a role check to the policies.
 - **Audit log contains personal data.** Account numbers and mobile numbers are copied into `audit_log`. Only authenticated users can read it.
 
-## Questions to resolve
+## Known guesses
 
-Open points from reconstructing the database from code (see also the notes at the bottom of each `db/*.sql` file):
-
-- **Who creates `portal_access` rows?** The admin app only reads and deactivates them. Generating a link does not insert one. If rows are created by hand, or by a part of the system not in these repos, that is fine. If not, portal submissions will be rejected by the RLS policy.
-- **Excel bulk-import of date rows** writes `qty_sessions`, `ehs_total` and `row_total`, which do not match the columns every other code path uses (`no_sessions`, `row_amount`). That insert looks like it fails silently.
+`db/schema.sql` matches the live `claims` columns (supplied by the owner). Everything else in it is inferred from code and marked `GUESS:`: other tables' column types, foreign keys, indexes, and `claim_date_rows.claim_id` / `staff.id` being text. Compare with the live database before running it anywhere that has data.
 
 ## Development
 
