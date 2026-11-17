@@ -1,8 +1,8 @@
 -- =====================================================================
--- Database-side audit logging for claims and claim_date_rows
+-- Database-side audit logging for claims
 -- Run AFTER db/schema.sql (and rls_policies.sql). Safe to re-run.
 -- =====================================================================
--- Every INSERT / UPDATE / DELETE on these tables is written to
+-- Every INSERT / UPDATE / DELETE on public.claims is written to
 -- public.audit_log by the database, regardless of which client made it
 -- (admin app, portal, SQL editor, a script).
 --
@@ -69,31 +69,22 @@ create trigger audit_claims
   after insert or update or delete on public.claims
   for each row execute function public.audit_row_change();
 
+-- claim_date_rows is deliberately NOT audited (owner decision): the admin app deletes and
+-- re-inserts all of a claim's date rows on every save, which would flood the log.
+-- Remove a trigger left over from an earlier version of this file:
 drop trigger if exists audit_claim_date_rows on public.claim_date_rows;
-create trigger audit_claim_date_rows
-  after insert or update or delete on public.claim_date_rows
-  for each row execute function public.audit_row_change();
 
 
 -- ---------------------------------------------------------------------
 -- Things to know
--- 1. Double logging: coe-app still calls logAction() for claims, so until
---    those browser calls are removed (an app change, not done here) each admin
---    change on claims appears twice: once from the browser, once from the trigger.
---    The trigger row is the trustworthy one.
--- 2. Shape differs: the browser logs a small summary object
---    ({name, work_type_id, amount, season_id}); the trigger logs the FULL
---    row as jsonb. The Audit Log screen reads data.name / data.work_type_id /
---    data.amount, which exist in the full row too, so it still renders.
---    For approvals, new_data.status = 'verified' still triggers the
---    "Approved portal submission" wording.
--- 3. Noise: every admin save of a date-based claim DELETEs and re-INSERTs all
---    its claim_date_rows, so each such save writes several rows for
---    claim_date_rows. Drop the claim_date_rows trigger if that is too noisy:
---      drop trigger audit_claim_date_rows on public.claim_date_rows;
--- 4. Privacy: bank account numbers and mobile numbers are copied into
---    audit_log. Only authenticated admins can read audit_log (see rls_policies.sql).
--- 5. Not covered: staff, exam_seasons, portal_access, app_settings are still
---    logged (or not) only by the browser. Attach the same function to them
---    the same way if wanted.
+-- 1. The browser's logAction() calls for claims were removed from coe-app, so this
+--    trigger is now the only source of claims audit rows. Audit rows for staff and
+--    exam_seasons are still written by the browser.
+-- 2. Shape: the trigger logs the FULL row as jsonb in old_data/new_data. The Audit Log
+--    screen reads data.name / work_type_id / amount, which exist in the full row, and
+--    new_data.status = 'verified' still gives the "Approved portal submission" wording.
+-- 3. Privacy: bank account and mobile numbers are copied into audit_log. Only
+--    authenticated admins can read audit_log (see rls_policies.sql).
+-- 4. Change of record: the approve step used to log {source:'portal_approval'};
+--    the trigger just sees status draft -> verified.
 -- ---------------------------------------------------------------------
