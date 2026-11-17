@@ -79,7 +79,7 @@ All the SQL files are written to be re-run safely, except `schema.sql`, which wi
 
 ## Known gaps
 
-- **`exam_schedule` is not deployed.** The table does not exist in the production database, but `index.html` queries it in three places, all in the QP Setting screens (`QP_INT`, `QP_EXT`):
+- **`exam_schedule` is not deployed.** The table does not exist in the production database, but `index.html` makes three calls to it (one select, one delete, one insert), all in the QP Setting screens (`QP_INT`, `QP_EXT`):
   1. on opening the screen, it loads the season's schedule to auto-fill subject names, show a "subjects loaded" badge and fill an exam-date column;
   2. the "Upload Schedule" button in the QP Analytics card deletes the season's rows and inserts the uploaded Excel rows.
 
