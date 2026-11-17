@@ -891,14 +891,12 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
     if(editing){
       const {error}=await supabase.from('claims').update(payload).eq('id',editing);
       if(error){toast.show(safeError(error,'Update failed. Please try again.'),'error');setLoading(false);return;}
-      logAction('claims',editing,'UPDATE',null,{name:payload.name,work_type_id:payload.work_type_id,amount:payload.amount,season_id:payload.season_id});
     } else {
       // Generate UUID for new entries (claims.id has no DB default)
       const newId=uuid();
       const {data,error}=await supabase.from('claims').insert([{id:newId,...payload}]).select().single();
       if(error){toast.show(safeError(error,'Save failed. Please try again.'),'error');setLoading(false);return;}
       claimId=data.id;
-      logAction('claims',claimId,'INSERT',null,{name:payload.name,work_type_id:payload.work_type_id,amount:payload.amount,season_id:payload.season_id});
     }
     if(isDateBased && claimId){
       await supabase.from('claim_date_rows').delete().eq('claim_id',claimId);
@@ -957,10 +955,8 @@ function WorkScreen({wt,season,toast,editTarget,onEditTargetConsumed}){
 
   async function del(id){
     if(!confirm('Delete this entry?'))return;
-    const {data:oldData}=await supabase.from('claims').select('name,work_type_id,amount,season_id').eq('id',id).maybeSingle();
     await supabase.from('claim_date_rows').delete().eq('claim_id',id);
     await supabase.from('claims').delete().eq('id',id);
-    logAction('claims',id,'DELETE',oldData,null);
     toast.show('Deleted','info');load();
   }
 
@@ -1718,9 +1714,9 @@ function ImportModal({season,toast,onClose}){
           const ehsT=Number(row.ehs_rem||0)+Number(row.ehs_lump||0);
           const rowT=ehsT+Number(row.ihs_rem||0)+Number(row.rhs_rem||0);
           await supabase.from('claim_date_rows').insert([{
-            claim_id:data.id,date:row.date,session:row.session||'FN',qty_sessions:row.no_sessions||1,
-            ehs_rem:row.ehs_rem||0,ehs_lump:row.ehs_lump||0,ehs_total:isED?ehsT:0,
-            ihs_rem:row.ihs_rem||0,rhs_rem:row.rhs_rem||0,row_total:isED?rowT:0,
+            claim_id:data.id,date:row.date,session:row.session||'FN',no_sessions:row.no_sessions||1,
+            ehs_rem:row.ehs_rem||0,ehs_lump:row.ehs_lump||0,
+            ihs_rem:row.ihs_rem||0,rhs_rem:row.rhs_rem||0,row_amount:isED?rowT:0,
           }]);
         }
         success++;
@@ -2575,7 +2571,7 @@ function Approvals({season,toast,onApprove,onOpenWork}){
   const expiresAt=access?.expires_at?new Date(access.expires_at):null;
   const timeLeft=expiresAt?Math.max(0,Math.round((expiresAt-now)/60000)):0; // minutes left
 
-  function generateLink(){
+  async function generateLink(){
     if(!portalUrl){
       toast.show('Please set Portal URL first','error');
       setShowUrlSetting(true);
@@ -2584,6 +2580,18 @@ function Approvals({season,toast,onApprove,onOpenWork}){
     }
     const mins=duration.unit==='hours'?duration.value*60:duration.unit==='days'?duration.value*1440:duration.value;
     const expiry=Date.now()+(mins*60000);
+    // Record the opening in the database. The RLS policy only accepts portal
+    // submissions while an active, unexpired portal_access row exists for the season.
+    // Close any earlier rows first so the new expiry is the only one in force.
+    const {error:closeErr}=await supabase.from('portal_access').update({is_active:false}).eq('season_id',season.id).eq('is_active',true);
+    if(closeErr){toast.show(safeError(closeErr,'Could not open the portal. Please try again.'),'error');return;}
+    const {error:accessErr}=await supabase.from('portal_access').insert([{
+      season_id:season.id,
+      expires_at:new Date(expiry).toISOString(),
+      is_active:true,
+    }]);
+    if(accessErr){toast.show(safeError(accessErr,'Could not open the portal. Please try again.'),'error');return;}
+    await loadAccess();
     const raw=btoa(season.id+'_'+expiry).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
     // Use the hosted portal URL (configured once by COE)
     const base=portalUrl.replace(/\/$/,'');
@@ -2603,7 +2611,6 @@ function Approvals({season,toast,onApprove,onOpenWork}){
   async function approve(c){
     const {error}=await supabase.from('claims').update({status:'verified'}).eq('id',c.id);
     if(error){toast.show(safeError(error,'Operation failed. Please try again.'),'error');return;}
-    logAction('claims',c.id,'UPDATE',{status:'draft'},{status:'verified',source:'portal_approval',name:c.name});
     toast.show('Approved — opening work screen to complete details','success');
     loadPending();onApprove();
     onOpenWork&&onOpenWork(c.work_type_id,c.id);
