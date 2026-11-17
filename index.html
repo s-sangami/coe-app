@@ -1718,9 +1718,9 @@ function ImportModal({season,toast,onClose}){
           const ehsT=Number(row.ehs_rem||0)+Number(row.ehs_lump||0);
           const rowT=ehsT+Number(row.ihs_rem||0)+Number(row.rhs_rem||0);
           await supabase.from('claim_date_rows').insert([{
-            claim_id:data.id,date:row.date,session:row.session||'FN',qty_sessions:row.no_sessions||1,
-            ehs_rem:row.ehs_rem||0,ehs_lump:row.ehs_lump||0,ehs_total:isED?ehsT:0,
-            ihs_rem:row.ihs_rem||0,rhs_rem:row.rhs_rem||0,row_total:isED?rowT:0,
+            claim_id:data.id,date:row.date,session:row.session||'FN',no_sessions:row.no_sessions||1,
+            ehs_rem:row.ehs_rem||0,ehs_lump:row.ehs_lump||0,
+            ihs_rem:row.ihs_rem||0,rhs_rem:row.rhs_rem||0,row_amount:isED?rowT:0,
           }]);
         }
         success++;
