@@ -33,7 +33,6 @@ It is a single file, `index.html` (React and Babel loaded in the browser, Supaba
 | `claims` | One claim per person, work type and season |
 | `claim_date_rows` | Per-date lines for date-based claims (hall duty, practicals and so on) |
 | `staff` | Directory of internal and external staff, used for quick-fill |
-| `exam_schedule` | Subject code to exam date and session, uploaded from Excel |
 | `portal_access` | Whether the external portal is open for a season, and until when |
 | `app_settings` | Shared key/value settings (portal URL, custom departments) |
 | `audit_log` | Who changed what |
@@ -57,7 +56,8 @@ Use a **new, empty** Supabase project, or review the SQL against your existing o
 3. In the SQL editor, run these in order:
    1. [`db/schema.sql`](db/schema.sql): tables. This file was reconstructed from the app code, not exported. Every guess is marked `GUESS:`. Compare it with the live database before relying on it.
    2. [`db/rls_policies.sql`](db/rls_policies.sql): enables Row Level Security, creates the portal and admin policies, and revokes default anon privileges.
-   3. [`db/audit_triggers.sql`](db/audit_triggers.sql): audit triggers on `claims` and `claim_date_rows`.
+   3. [`db/audit_triggers.sql`](db/audit_triggers.sql): audit trigger on `claims`.
+   4. Optional: [`db/optional_exam_schedule.sql`](db/optional_exam_schedule.sql), only if you want the exam-schedule feature (see Known gaps).
 4. Put your project's URL and publishable (anon) key in the `SUPA_URL` / `SUPA_KEY` constants at the top of the script in both `index.html` files.
 5. **Open the portal** for a season from the Portal screen. The RLS policy only accepts portal inserts while a row in `portal_access` has `is_active = true`, a future `expires_at`, and the right `season_id`; "Generate Link" creates that row.
 
@@ -77,9 +77,15 @@ All the SQL files are written to be re-run safely, except `schema.sql`, which wi
 - **Every logged-in user is a full admin.** The policies give any `authenticated` user full access, and there is no role table. Disable public sign-ups and create admin accounts manually, or add a role check to the policies.
 - **Audit log contains personal data.** Account numbers and mobile numbers are copied into `audit_log`. Only authenticated users can read it.
 
-## Known guesses
+## Known gaps
 
-`db/schema.sql` matches the live `claims` columns (supplied by the owner). Everything else in it is inferred from code and marked `GUESS:`: other tables' column types, foreign keys, indexes, and `claim_date_rows.claim_id` / `staff.id` being text. Compare with the live database before running it anywhere that has data.
+- **`exam_schedule` is not deployed.** The table does not exist in the production database, but `index.html` queries it in three places, all in the QP Setting screens (`QP_INT`, `QP_EXT`):
+  1. on opening the screen, it loads the season's schedule to auto-fill subject names, show a "subjects loaded" badge and fill an exam-date column;
+  2. the "Upload Schedule" button in the QP Analytics card deletes the season's rows and inserts the uploaded Excel rows.
+
+  Today the load fails quietly and the schedule features stay empty, and "Upload Schedule" shows an "Upload failed" message. Nothing else breaks. The table definition is kept apart in [`db/optional_exam_schedule.sql`](db/optional_exam_schedule.sql) and is not part of `schema.sql` or `rls_policies.sql`. To use the feature, run that file; otherwise remove or hide the feature in the app.
+- **`ext_portal_links` is in the database but unused.** The table exists live, but a search of both repos (`coe-app/index.html` and `coe-portal/index.html`, plus every README and SQL file) finds no reference to it. The portal link flow uses `portal_access` and the `?t=` token instead. It is not in `db/schema.sql` and has no policies here; check its RLS in Supabase, because a table without RLS is readable and writable through the public API.
+- **Schema is partly inferred.** `db/schema.sql` matches the live `claims` columns (supplied by the owner). Everything else in it is inferred from code and marked `GUESS:`: other tables' column types, foreign keys, indexes, and `claim_date_rows.claim_id` / `staff.id` being text. Compare with the live database before running it anywhere that has data.
 
 ## Development
 
